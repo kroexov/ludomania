@@ -18,10 +18,11 @@ const (
 	internPercent   = 350
 	juniorPercent   = 650
 	middlePercent   = 850
-	seniorPercent   = 950
-	teamLeadPercent = 980
-	ceoPercent      = 995
-	papikPercent    = 1000
+	seniorPercent   = 920
+	teamLeadPercent = 970
+	ceoPercent      = 985
+	papikPercent    = 995
+	mayatinPercent  = 1000
 )
 
 var salariesMap = map[int]string{
@@ -34,6 +35,7 @@ var salariesMap = map[int]string{
 	teamLeadPercent: `Ты \- тимлид\! 👨‍💼 Можешь вообще не работать\, а сидеть на созвонах и важных встречах целый день`,
 	ceoPercent:      `Ты \- CEO\! 😎 Пока эти лошпеды тратят нервы на кодинг\, ты получаешь все сливки с их трудов\. Все потому что ты \- лучше\, чем они\. Не забывай напоминать им об этом\!`,
 	papikPercent:    `Ты \- Папикян Сергей Седракович\, легенда ИТМО и самый богатый человек в мире\. Ты победил в этой жизни\, все тебе завидуют\.`,
+	mayatinPercent:  `Ты \- Маятин Александр Владимирович\! Три источника твоего богатства \- Производительность\, Надежность и Безопасность\.`,
 }
 
 type BotService struct {
@@ -95,6 +97,10 @@ func (bs BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update *
 		break
 	case percents <= papikPercent:
 		ending = salariesMap[papikPercent]
+		salary = math.MaxInt32
+		break
+	case percents <= mayatinPercent:
+		ending = salariesMap[mayatinPercent]
 		salary = math.MaxInt32
 		break
 	}
