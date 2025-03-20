@@ -7,6 +7,7 @@ import (
 	"gradebot/pkg/embedlog"
 	"math"
 	"math/rand"
+	"strings"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
@@ -105,6 +106,22 @@ func (bs BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update *
 		break
 	}
 
+	username := update.InlineQuery.From.Username
+	username = strings.ReplaceAll(username, "_", `\_`)
+	username = strings.ReplaceAll(username, "!", `\!`)
+	username = strings.ReplaceAll(username, ".", `\.`)
+	username = strings.ReplaceAll(username, ",", `\,`)
+	username = strings.ReplaceAll(username, `-`, `\-`)
+	username = strings.ReplaceAll(username, `=`, `\=`)
+	username = strings.ReplaceAll(username, `#`, `\#`)
+	username = strings.ReplaceAll(username, `+`, `\+`)
+	username = strings.ReplaceAll(username, `(`, `\(`)
+	username = strings.ReplaceAll(username, `)`, `\)`)
+	username = strings.ReplaceAll(username, `*`, `\*`)
+	username = strings.ReplaceAll(username, `~`, `\~`)
+	username = strings.ReplaceAll(username, `[`, `\[`)
+	username = strings.ReplaceAll(username, `]`, `\]`)
+
 	// send answer to the query
 	results := []models.InlineQueryResult{
 		&models.InlineQueryResultArticle{
@@ -121,7 +138,7 @@ func (bs BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update *
 					},
 				}},
 			InputMessageContent: &models.InputTextMessageContent{
-				MessageText: fmt.Sprintf("Зарплата @%s: ||%d₽\n%s||", update.InlineQuery.From.Username, salary, ending),
+				MessageText: fmt.Sprintf("Зарплата @%s: ||%d₽\n%s||", username, salary, ending),
 				ParseMode:   models.ParseModeMarkdown,
 			}},
 	}
