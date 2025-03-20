@@ -4,31 +4,19 @@ import (
 	"context"
 	"time"
 
-	"apisrv/pkg/db"
-	"apisrv/pkg/embedlog"
-	"apisrv/pkg/vt"
+	botService "gradebot/pkg/bot"
+	"gradebot/pkg/db"
+	"gradebot/pkg/embedlog"
 
 	"github.com/go-pg/pg/v10"
-	"github.com/labstack/echo/v4"
-	"github.com/vmkteam/rpcgen/v2"
-	"github.com/vmkteam/rpcgen/v2/typescript"
-	"github.com/vmkteam/vfs"
-	"github.com/vmkteam/zenrpc/v2"
+	"github.com/go-telegram/bot"
 )
 
 type Config struct {
 	Database *pg.Options
-	Server   struct {
-		Host      string
-		Port      int
-		IsDevel   bool
-		EnableVFS bool
+	Bot      struct {
+		Token string
 	}
-	Sentry struct {
-		Environment string
-		DSN         string
-	}
-	VFS vfs.Config
 }
 
 type App struct {
@@ -36,9 +24,10 @@ type App struct {
 	appName string
 	cfg     Config
 	db      db.DB
+	b       *bot.Bot
 	dbc     *pg.DB
-	echo    *echo.Echo
-	vtsrv   zenrpc.Server
+
+	bs *botService.BotService
 }
 
 func New(appName string, verbose bool, cfg Config, db db.DB, dbc *pg.DB) *App {
@@ -47,32 +36,27 @@ func New(appName string, verbose bool, cfg Config, db db.DB, dbc *pg.DB) *App {
 		cfg:     cfg,
 		db:      db,
 		dbc:     dbc,
-		echo:    echo.New(),
 	}
+
 	a.SetStdLoggers(verbose)
-	a.echo.HideBanner = true
-	a.echo.HidePort = true
-	a.echo.IPExtractor = echo.ExtractIPFromRealIPHeader()
-	a.vtsrv = vt.New(a.db, a.Logger, a.cfg.Server.IsDevel)
+
+	a.bs = botService.NewBotService(a.Logger, a.db)
+
+	opts := []bot.Option{bot.WithDefaultHandler(a.bs.DefaultHandler)}
+	b, err := bot.New(cfg.Bot.Token, opts...)
+	if err != nil {
+		panic(err)
+	}
+	a.b = b
 
 	return a
 }
 
 // Run is a function that runs application.
 func (a *App) Run() error {
-	a.registerMetrics()
-	a.registerHandlers()
-	a.registerDebugHandlers()
-	a.registerAPIHandlers()
-	a.registerVTApiHandlers()
-	return a.runHTTPServer(a.cfg.Server.Host, a.cfg.Server.Port)
-}
-
-// VTTypeScriptClient returns TypeScript client for VT.
-func (a *App) VTTypeScriptClient() ([]byte, error) {
-	gen := rpcgen.FromSMD(a.vtsrv.SMD())
-	tsSettings := typescript.Settings{ExcludedNamespace: []string{NSVFS}, WithClasses: true}
-	return gen.TSCustomClient(tsSettings).Generate()
+	//registerBotHandlers()
+	go a.b.Start(context.TODO())
+	return nil
 }
 
 // Shutdown is a function that gracefully stops HTTP server.
@@ -80,7 +64,7 @@ func (a *App) Shutdown(timeout time.Duration) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	if err := a.echo.Shutdown(ctx); err != nil {
-		a.Errorf("shutting down server err=%q", err)
+	if _, err := a.b.Close(ctx); err != nil {
+		a.Errorf("shutting down bot err=%q", err)
 	}
 }

@@ -1,4 +1,4 @@
-NAME := apisrv
+NAME := gradebot
 
 GOFLAGS=-mod=vendor
 
