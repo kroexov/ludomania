@@ -1,8 +1,7 @@
 <Project xmlns:xsi="" xmlns:xsd="">
-    <Name>apisrv.mfd</Name>
+    <Name>ludoman.mfd</Name>
     <PackageNames>
         <string>common</string>
-        <string>vfs</string>
     </PackageNames>
     <Languages>
         <string>ru</string>

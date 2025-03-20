@@ -18,15 +18,13 @@ type CommonRepo struct {
 // NewCommonRepo returns new repository
 func NewCommonRepo(db orm.DB) CommonRepo {
 	return CommonRepo{
-		db: db,
-		filters: map[string][]Filter{
-			Tables.User.Name: {StatusFilter},
-		},
+		db:      db,
+		filters: map[string][]Filter{},
 		sort: map[string][]SortField{
-			Tables.User.Name: {{Column: Columns.User.CreatedAt, Direction: SortDesc}},
+			Tables.Ludoman.Name: {{Column: Columns.Ludoman.ID, Direction: SortDesc}},
 		},
 		join: map[string][]string{
-			Tables.User.Name: {TableColumns},
+			Tables.Ludoman.Name: {TableColumns},
 		},
 	}
 }
@@ -50,27 +48,27 @@ func (cr CommonRepo) WithEnabledOnly() CommonRepo {
 	return cr
 }
 
-/*** User ***/
+/*** Ludoman ***/
 
-// FullUser returns full joins with all columns
-func (cr CommonRepo) FullUser() OpFunc {
-	return WithColumns(cr.join[Tables.User.Name]...)
+// FullLudoman returns full joins with all columns
+func (cr CommonRepo) FullLudoman() OpFunc {
+	return WithColumns(cr.join[Tables.Ludoman.Name]...)
 }
 
-// DefaultUserSort returns default sort.
-func (cr CommonRepo) DefaultUserSort() OpFunc {
-	return WithSort(cr.sort[Tables.User.Name]...)
+// DefaultLudomanSort returns default sort.
+func (cr CommonRepo) DefaultLudomanSort() OpFunc {
+	return WithSort(cr.sort[Tables.Ludoman.Name]...)
 }
 
-// UserByID is a function that returns User by ID(s) or nil.
-func (cr CommonRepo) UserByID(ctx context.Context, id int, ops ...OpFunc) (*User, error) {
-	return cr.OneUser(ctx, &UserSearch{ID: &id}, ops...)
+// LudomanByID is a function that returns Ludoman by ID(s) or nil.
+func (cr CommonRepo) LudomanByID(ctx context.Context, id string, ops ...OpFunc) (*Ludoman, error) {
+	return cr.OneLudoman(ctx, &LudomanSearch{ID: &id}, ops...)
 }
 
-// OneUser is a function that returns one User by filters. It could return pg.ErrMultiRows.
-func (cr CommonRepo) OneUser(ctx context.Context, search *UserSearch, ops ...OpFunc) (*User, error) {
-	obj := &User{}
-	err := buildQuery(ctx, cr.db, obj, search, cr.filters[Tables.User.Name], PagerTwo, ops...).Select()
+// OneLudoman is a function that returns one Ludoman by filters. It could return pg.ErrMultiRows.
+func (cr CommonRepo) OneLudoman(ctx context.Context, search *LudomanSearch, ops ...OpFunc) (*Ludoman, error) {
+	obj := &Ludoman{}
+	err := buildQuery(ctx, cr.db, obj, search, cr.filters[Tables.Ludoman.Name], PagerTwo, ops...).Select()
 
 	if errors.Is(err, pg.ErrMultiRows) {
 		return nil, err
@@ -81,34 +79,31 @@ func (cr CommonRepo) OneUser(ctx context.Context, search *UserSearch, ops ...OpF
 	return obj, err
 }
 
-// UsersByFilters returns User list.
-func (cr CommonRepo) UsersByFilters(ctx context.Context, search *UserSearch, pager Pager, ops ...OpFunc) (users []User, err error) {
-	err = buildQuery(ctx, cr.db, &users, search, cr.filters[Tables.User.Name], pager, ops...).Select()
+// LudomenByFilters returns Ludoman list.
+func (cr CommonRepo) LudomenByFilters(ctx context.Context, search *LudomanSearch, pager Pager, ops ...OpFunc) (ludomen []Ludoman, err error) {
+	err = buildQuery(ctx, cr.db, &ludomen, search, cr.filters[Tables.Ludoman.Name], pager, ops...).Select()
 	return
 }
 
-// CountUsers returns count
-func (cr CommonRepo) CountUsers(ctx context.Context, search *UserSearch, ops ...OpFunc) (int, error) {
-	return buildQuery(ctx, cr.db, &User{}, search, cr.filters[Tables.User.Name], PagerOne, ops...).Count()
+// CountLudomen returns count
+func (cr CommonRepo) CountLudomen(ctx context.Context, search *LudomanSearch, ops ...OpFunc) (int, error) {
+	return buildQuery(ctx, cr.db, &Ludoman{}, search, cr.filters[Tables.Ludoman.Name], PagerOne, ops...).Count()
 }
 
-// AddUser adds User to DB.
-func (cr CommonRepo) AddUser(ctx context.Context, user *User, ops ...OpFunc) (*User, error) {
-	q := cr.db.ModelContext(ctx, user)
-	if len(ops) == 0 {
-		q = q.ExcludeColumn(Columns.User.CreatedAt)
-	}
+// AddLudoman adds Ludoman to DB.
+func (cr CommonRepo) AddLudoman(ctx context.Context, ludoman *Ludoman, ops ...OpFunc) (*Ludoman, error) {
+	q := cr.db.ModelContext(ctx, ludoman)
 	applyOps(q, ops...)
 	_, err := q.Insert()
 
-	return user, err
+	return ludoman, err
 }
 
-// UpdateUser updates User in DB.
-func (cr CommonRepo) UpdateUser(ctx context.Context, user *User, ops ...OpFunc) (bool, error) {
-	q := cr.db.ModelContext(ctx, user).WherePK()
+// UpdateLudoman updates Ludoman in DB.
+func (cr CommonRepo) UpdateLudoman(ctx context.Context, ludoman *Ludoman, ops ...OpFunc) (bool, error) {
+	q := cr.db.ModelContext(ctx, ludoman).WherePK()
 	if len(ops) == 0 {
-		q = q.ExcludeColumn(Columns.User.CreatedAt)
+		q = q.ExcludeColumn(Columns.Ludoman.ID)
 	}
 	applyOps(q, ops...)
 	res, err := q.Update()
@@ -119,9 +114,14 @@ func (cr CommonRepo) UpdateUser(ctx context.Context, user *User, ops ...OpFunc) 
 	return res.RowsAffected() > 0, err
 }
 
-// DeleteUser set statusId to deleted in DB.
-func (cr CommonRepo) DeleteUser(ctx context.Context, id int) (deleted bool, err error) {
-	user := &User{ID: id, StatusID: StatusDeleted}
+// DeleteLudoman deletes Ludoman from DB.
+func (cr CommonRepo) DeleteLudoman(ctx context.Context, id string) (deleted bool, err error) {
+	ludoman := &Ludoman{ID: id}
 
-	return cr.UpdateUser(ctx, user, WithColumns(Columns.User.StatusID))
+	res, err := cr.db.ModelContext(ctx, ludoman).WherePK().Delete()
+	if err != nil {
+		return false, err
+	}
+
+	return res.RowsAffected() > 0, err
 }

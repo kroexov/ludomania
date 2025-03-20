@@ -49,16 +49,16 @@ mod:
 	@go mod vendor
 	@git add vendor
 
-NS := "NONE"
+NS := "common"
 
-MAPPING := "common:users;vfs:vfsFiles,vfsFolders"
+MAPPING := "common:ludomans"
 
 mfd-xml:
-	@mfd-generator xml -c "postgres://postgres:postgres@localhost:5432/apisrv?sslmode=disable" -m ./docs/model/apisrv.mfd -n $(MAPPING)
+	@mfd-generator xml -c "postgres://postgres:postgres@localhost:5432/ludoman?sslmode=disable" -m ./docs/model/ludoman.mfd -n $(MAPPING)
 mfd-model:
-	@mfd-generator model -m ./docs/model/apisrv.mfd -p db -o ./pkg/db
+	@mfd-generator model -m ./docs/model/ludoman.mfd -p db -o ./pkg/db
 mfd-repo: --check-ns
-	@mfd-generator repo -m ./docs/model/apisrv.mfd -p db -o ./pkg/db -n $(NS)
+	@mfd-generator repo -m ./docs/model/ludoman.mfd -p db -o ./pkg/db -n $(NS)
 mfd-vt-xml:
 	@mfd-generator xml-vt -m ./docs/model/apisrv.mfd
 mfd-vt-rpc: --check-ns
