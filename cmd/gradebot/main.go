@@ -13,7 +13,6 @@ import (
 	"gradebot/pkg/db"
 
 	"github.com/BurntSushi/toml"
-	"github.com/go-pg/pg/v10"
 	"github.com/namsral/flag"
 )
 
@@ -40,20 +39,20 @@ func main() {
 	}
 
 	// check db connection
-	dbconn := pg.Connect(cfg.Database)
-	dbc := db.New(dbconn)
-	v, err := dbc.Version()
-	exitOnError(err)
-	log.Println(v)
+	//dbconn := pg.Connect(cfg.Database)
+	//dbc := db.New(dbconn)
+	//v, err := dbc.Version()
+	//exitOnError(err)
+	//log.Println(v)
 
 	// log all sql queries
-	if *flVerboseSql {
-		sqlLogger := log.New(os.Stdout, "Q", log.LstdFlags)
-		dbconn.AddQueryHook(db.NewQueryLogger(sqlLogger))
-	}
+	//if *flVerboseSql {
+	//	sqlLogger := log.New(os.Stdout, "Q", log.LstdFlags)
+	//	dbconn.AddQueryHook(db.NewQueryLogger(sqlLogger))
+	//}
 
 	// create & run app
-	application := app.New(appName, *flVerbose, cfg, dbc, dbconn)
+	application := app.New(appName, *flVerbose, cfg, db.DB{}, nil)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
