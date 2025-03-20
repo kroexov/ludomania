@@ -1,0 +1,12 @@
+<Project xmlns:xsi="" xmlns:xsd="">
+    <Name>apisrv.mfd</Name>
+    <PackageNames>
+        <string>common</string>
+        <string>vfs</string>
+    </PackageNames>
+    <Languages>
+        <string>ru</string>
+    </Languages>
+    <GoPGVer>10</GoPGVer>
+    <CustomTypes></CustomTypes>
+</Project>

@@ -1,0 +1,26 @@
+[Server]
+Host      = "localhost"
+Port      = 8075
+IsDevel   = true
+EnableVFS = true
+
+[Database]
+Addr            = "localhost:5432"
+User            = "postgres"
+Database        = "apisrv"
+Password        = ""
+PoolSize        = 5
+ApplicationName = "apisrv"
+
+[Sentry]
+DSN         = ""
+Environment = ""
+
+[VFS]
+MaxFileSize      = 33_554_432 # 32MB
+Path             = "./media/"
+WebPath          = "/media/"
+UploadFormName   = "Filedata"
+SkipFolderVerify = false
+Extensions       = ["jpg", "jpeg", "png", "gif"]
+MimeTypes        = ["image/jpeg", "image/png", "image/gif"]

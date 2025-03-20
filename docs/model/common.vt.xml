@@ -1,0 +1,26 @@
+<VTNamespace xmlns:xsi="" xmlns:xsd="">
+    <Name>common</Name>
+    <VTEntities>
+        <Entity Name="User" Mode="None">
+            <TerminalPath>users</TerminalPath>
+            <Attributes>
+                <Attribute Name="ID" AttrName="ID" SearchName="ID" Summary="true" Search="true" Max="0" Min="0" Required="false" Validate=""></Attribute>
+                <Attribute Name="CreatedAt" AttrName="CreatedAt" SearchName="CreatedAt" Summary="true" Search="false" Max="0" Min="0" Required="true" Validate=""></Attribute>
+                <Attribute Name="Login" AttrName="Login" SearchName="LoginILike" Summary="true" Search="true" Max="64" Min="0" Required="true" Validate=""></Attribute>
+                <Attribute Name="Password" AttrName="Password" SearchName="PasswordILike" Summary="false" Search="false" Max="64" Min="0" Required="true" Validate=""></Attribute>
+                <Attribute Name="AuthKey" AttrName="AuthKey" SearchName="AuthKeyILike" Summary="false" Search="false" Max="32" Min="0" Required="true" Validate=""></Attribute>
+                <Attribute Name="LastActivityAt" AttrName="LastActivityAt" SearchName="LastActivityAt" Summary="true" Search="false" Max="0" Min="0" Required="false" Validate=""></Attribute>
+                <Attribute Name="StatusID" AttrName="StatusID" SearchName="StatusID" Summary="true" Search="true" Max="0" Min="0" Required="true" Validate="status"></Attribute>
+                <Attribute Name="IDs" SearchName="IDs" Summary="false" Search="true" Max="0" Min="0" Required="false" Validate=""></Attribute>
+                <Attribute Name="NotID" SearchName="NotID" Summary="false" Search="true" Max="0" Min="0" Required="false" Validate=""></Attribute>
+            </Attributes>
+            <Template>
+                <Attribute Name="Login" VTAttrName="Login" List="true" Form="HTML_INPUT" Search="HTML_INPUT"></Attribute>
+                <Attribute Name="Password" VTAttrName="Password" List="false" Form="HTML_INPUT" Search=""></Attribute>
+                <Attribute Name="CreatedAt" VTAttrName="CreatedAt" List="true" Form="HTML_NONE" Search="HTML_NONE"></Attribute>
+                <Attribute Name="LastActivityAt" VTAttrName="LastActivityAt" List="true" Form="HTML_NONE" Search="HTML_NONE"></Attribute>
+                <Attribute Name="StatusID" VTAttrName="StatusID" List="true" Form="HTML_INPUT" Search="HTML_INPUT"></Attribute>
+            </Template>
+        </Entity>
+    </VTEntities>
+</VTNamespace>
