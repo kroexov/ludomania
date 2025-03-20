@@ -6,7 +6,7 @@ import (
 	"gradebot/pkg/db"
 	"gradebot/pkg/embedlog"
 	"math"
-	"math/rand/v2"
+	"math/rand"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
@@ -59,38 +59,38 @@ func (bs BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update *
 
 	var salary int
 	var ending string
-	percents := rand.IntN(1000)
+	percents := rand.Intn(1000)
 	switch {
 	case percents <= scholarPercent:
-		salary = rand.IntN(1000)
+		salary = rand.Intn(1000)
 		ending = salariesMap[scholarPercent]
 		break
 	case percents <= brokePercent:
-		salary = 10000 + rand.IntN(20000)
+		salary = 10000 + rand.Intn(20000)
 		ending = salariesMap[brokePercent]
 		break
 	case percents <= internPercent:
-		salary = 20000 + (rand.IntN(25000)/1000)*1000
+		salary = 20000 + (rand.Intn(25000)/1000)*1000
 		ending = salariesMap[internPercent]
 		break
 	case percents <= juniorPercent:
-		salary = 40000 + (rand.IntN(40000)/1000)*1000
+		salary = 40000 + (rand.Intn(40000)/1000)*1000
 		ending = salariesMap[juniorPercent]
 		break
 	case percents <= middlePercent:
-		salary = 80000 + (rand.IntN(200000)/5000)*5000
+		salary = 80000 + (rand.Intn(200000)/5000)*5000
 		ending = salariesMap[middlePercent]
 		break
 	case percents <= seniorPercent:
-		salary = 280000 + (rand.IntN(320000)/10000)*10000
+		salary = 280000 + (rand.Intn(320000)/10000)*10000
 		ending = salariesMap[seniorPercent]
 		break
 	case percents <= teamLeadPercent:
-		salary = 600000 + (rand.IntN(500000)/50000)*50000
+		salary = 600000 + (rand.Intn(500000)/50000)*50000
 		ending = salariesMap[teamLeadPercent]
 		break
 	case percents <= ceoPercent:
-		salary = 1100000 + (rand.IntN(10000000)/100000)*100000
+		salary = 1100000 + (rand.Intn(10000000)/100000)*100000
 		ending = salariesMap[ceoPercent]
 		break
 	case percents <= papikPercent:
