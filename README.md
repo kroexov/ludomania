@@ -1,6 +1,8 @@
 # ludoman-bot 
 
 ## Запуск
+- Если еще нет golang, то скачать golang 1.21+
+- Прописать в корне go mod tidy, затем go mod vendor
 - в локальной БД создать БД ludoman, прогнать там файл docs/ludoman.sql
 - по примеру файла cfg/local.toml.dist создать файл cfg/local.toml, заполнить токен бота своим токеном
 - прописать make run, чтобы запустить прогу
