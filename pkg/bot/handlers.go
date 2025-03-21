@@ -550,7 +550,7 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 		}
 		result = "Список победителей: "
 		for _, winUser := range winUsers {
-			result += "@" + winUser.LudomanNickname
+			result += "@" + winUser.LudomanNickname + " "
 		}
 		result += fmt.Sprintf("\nПобедителям начислено: %d", cat.WinSum)
 
