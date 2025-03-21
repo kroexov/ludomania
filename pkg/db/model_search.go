@@ -53,10 +53,12 @@ type Searcher interface {
 type LudomanSearch struct {
 	search
 
-	ID      *string
-	Balance *int
-	IDs     []string
-	IDILike *string
+	ID                   *int
+	LudomanNickname      *string
+	Balance              *int
+	Losses               *int
+	IDs                  []int
+	LudomanNicknameILike *string
 }
 
 func (ls *LudomanSearch) Apply(query *orm.Query) *orm.Query {
@@ -66,14 +68,20 @@ func (ls *LudomanSearch) Apply(query *orm.Query) *orm.Query {
 	if ls.ID != nil {
 		ls.where(query, Tables.Ludoman.Alias, Columns.Ludoman.ID, ls.ID)
 	}
+	if ls.LudomanNickname != nil {
+		ls.where(query, Tables.Ludoman.Alias, Columns.Ludoman.LudomanNickname, ls.LudomanNickname)
+	}
 	if ls.Balance != nil {
 		ls.where(query, Tables.Ludoman.Alias, Columns.Ludoman.Balance, ls.Balance)
+	}
+	if ls.Losses != nil {
+		ls.where(query, Tables.Ludoman.Alias, Columns.Ludoman.Losses, ls.Losses)
 	}
 	if len(ls.IDs) > 0 {
 		Filter{Columns.Ludoman.ID, ls.IDs, SearchTypeArray, false}.Apply(query)
 	}
-	if ls.IDILike != nil {
-		Filter{Columns.Ludoman.ID, *ls.IDILike, SearchTypeILike, false}.Apply(query)
+	if ls.LudomanNicknameILike != nil {
+		Filter{Columns.Ludoman.LudomanNickname, *ls.LudomanNicknameILike, SearchTypeILike, false}.Apply(query)
 	}
 
 	ls.apply(query)

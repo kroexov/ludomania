@@ -1,4 +1,7 @@
-# apisrv 
+# ludoman-bot 
 
-## Problems
-- time validation
+## Запуск
+- в локальной БД создать БД ludoman, прогнать там файл docs/ludoman.sql
+- по примеру файла cfg/local.toml.dist создать файл cfg/local.toml, заполнить токен бота своим токеном
+- прописать make run, чтобы запустить прогу
+- если хочется сначала собрать, то прописать make build, затем получившийся файл запустить

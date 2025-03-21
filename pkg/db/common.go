@@ -61,7 +61,7 @@ func (cr CommonRepo) DefaultLudomanSort() OpFunc {
 }
 
 // LudomanByID is a function that returns Ludoman by ID(s) or nil.
-func (cr CommonRepo) LudomanByID(ctx context.Context, id string, ops ...OpFunc) (*Ludoman, error) {
+func (cr CommonRepo) LudomanByID(ctx context.Context, id int, ops ...OpFunc) (*Ludoman, error) {
 	return cr.OneLudoman(ctx, &LudomanSearch{ID: &id}, ops...)
 }
 
@@ -115,7 +115,7 @@ func (cr CommonRepo) UpdateLudoman(ctx context.Context, ludoman *Ludoman, ops ..
 }
 
 // DeleteLudoman deletes Ludoman from DB.
-func (cr CommonRepo) DeleteLudoman(ctx context.Context, id string) (deleted bool, err error) {
+func (cr CommonRepo) DeleteLudoman(ctx context.Context, id int) (deleted bool, err error) {
 	ludoman := &Ludoman{ID: id}
 
 	res, err := cr.db.ModelContext(ctx, ludoman).WherePK().Delete()

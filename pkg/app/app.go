@@ -54,7 +54,7 @@ func New(appName string, verbose bool, cfg Config, db db.DB, dbc *pg.DB) *App {
 
 // Run is a function that runs application.
 func (a *App) Run() error {
-	//registerBotHandlers()
+	a.bs.RegisterBotHandlers(a.b)
 	go a.b.Start(context.TODO())
 	return nil
 }
