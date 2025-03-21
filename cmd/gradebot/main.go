@@ -17,11 +17,11 @@ import (
 	"github.com/namsral/flag"
 )
 
-const appName = "gradebot"
+const appName = "ludoman"
 
 var (
 	fs           = flag.NewFlagSetWithEnvPrefix(os.Args[0], "APISRV", 0)
-	flConfigPath = fs.String("config", "config.toml", "Path to config file")
+	flConfigPath = fs.String("config", "cfg/local.toml", "Path to config file")
 	flVerbose    = fs.Bool("verbose", false, "enable debug output")
 	flVerboseSql = fs.Bool("verbose-sql", false, "enable all sql output")
 	cfg          app.Config
