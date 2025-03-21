@@ -622,6 +622,10 @@ func (bs *BotService) MayatinRouletteBetHandler(ctx context.Context, b *bot.Bot,
 		return
 	}
 
+	if bs.mayatinRouletteUsers == nil {
+		return
+	}
+
 	bs.mayatinRouletteUsers[user.ID] = struct{}{}
 	v, ok := bs.mayatinRouletteBets.Load(patternMayatinRoulette)
 	if !ok {
