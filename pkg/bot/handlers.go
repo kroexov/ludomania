@@ -77,6 +77,7 @@ type BotService struct {
 
 	cr                      db.CommonRepo
 	mayatinRouletteBets     *sync.Map
+	mu                      sync.Mutex
 	isMayatinRouletteActive bool
 	mayatinRouletteUsers    map[int]struct{}
 }
@@ -93,7 +94,7 @@ func (bs *BotService) RegisterBotHandlers(b *bot.Bot) {
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternBuyBack, bot.MatchTypePrefix, bs.BuyBackHandler)
 }
 
-func (bs BotService) DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+func (bs *BotService) DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	if update.InlineQuery != nil && update.InlineQuery.From != nil {
 		if err := bs.answerInlineQuery(ctx, b, update); err != nil {
 			bs.Errorf("%v", err)
@@ -103,7 +104,7 @@ func (bs BotService) DefaultHandler(ctx context.Context, b *bot.Bot, update *mod
 	return
 }
 
-func (bs BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update *models.Update) error {
+func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update *models.Update) error {
 	username := update.InlineQuery.From.Username
 	user, err := bs.cr.OneLudoman(ctx, &db.LudomanSearch{LudomanNickname: &username})
 	if err != nil {
@@ -495,10 +496,13 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 
 	bs.mayatinRouletteBets = new(sync.Map)
 	bs.isMayatinRouletteActive = true
+	bs.mu.Lock()
 	bs.mayatinRouletteUsers = make(map[int]struct{})
 	bs.mayatinRouletteBets.Store(patternMayatinRoulette, map[string][]int{})
+	bs.mu.Unlock()
 
 	for i := 0; i < 15; i++ {
+		bs.mu.Lock()
 		v, ok := bs.mayatinRouletteBets.Load(patternMayatinRoulette)
 		if !ok {
 			bs.Errorf("not found syncMap")
@@ -510,6 +514,7 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 			bs.Errorf("can't convert bets")
 			return
 		}
+		bs.mu.Unlock()
 
 		_, err = b.EditMessageCaption(ctx, &bot.EditMessageCaptionParams{
 			Caption:         fmt.Sprintf("Рулетка Маятина началась! Выбирайте ваш слот в рулетке!\nСтавка 100.000, слот 'Уважаемый коллега дает 10x выигрыш, но выпадает реже'\nОсталось %d секунд!", 15-i),
@@ -561,6 +566,7 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 	}
 	cat := mayatinCategories[selectedCategory]
 
+	bs.mu.Lock()
 	v, ok := bs.mayatinRouletteBets.Load(patternMayatinRoulette)
 	if !ok {
 		bs.Errorf("not found syncMap")
@@ -571,6 +577,11 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 	if !ok {
 		bs.Errorf("can't convert bets")
 		return
+	}
+	bs.mu.Unlock()
+
+	if len(bs.mayatinRouletteUsers) > 0 {
+		bs.db.Exec(`update ludomans set balance = balance - 100000 where "ludomanId" in (?)`, pg.In(intKeys(bs.mayatinRouletteUsers)))
 	}
 
 	var result string
@@ -590,8 +601,9 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 
 		err = bs.db.RunInTransaction(ctx, func(tx *pg.Tx) error {
 			for _, winUser := range winUsers {
+				crTx := bs.cr.WithTransaction(tx)
 				winUser.Balance += cat.WinSum
-				_, err = bs.cr.UpdateLudoman(ctx, &winUser, db.WithColumns(db.Columns.Ludoman.Balance))
+				_, err = crTx.UpdateLudoman(ctx, &winUser, db.WithColumns(db.Columns.Ludoman.Balance))
 				if err != nil {
 					return err
 				}
@@ -661,6 +673,7 @@ func (bs *BotService) MayatinRouletteBetHandler(ctx context.Context, b *bot.Bot,
 	}
 
 	bs.mayatinRouletteUsers[user.ID] = struct{}{}
+	bs.mu.Lock()
 	v, ok := bs.mayatinRouletteBets.Load(patternMayatinRoulette)
 	if !ok {
 		bs.Errorf("not found syncMap")
@@ -673,18 +686,20 @@ func (bs *BotService) MayatinRouletteBetHandler(ctx context.Context, b *bot.Bot,
 		return
 	}
 
-	user.Balance -= 100000
-	_, err = bs.cr.UpdateLudoman(ctx, user)
-	if err != nil {
-		bs.Errorf("%v", err)
-		return
-	}
-
 	newBets := append(bets["_"+userBet], user.ID)
 	bets["_"+userBet] = newBets
 	bs.mayatinRouletteBets.Store(patternMayatinRoulette, bets)
+	bs.mu.Unlock()
 }
 
 func Pointer[T any](in T) *T {
 	return &in
+}
+
+func intKeys(in map[int]struct{}) []int {
+	out := make([]int, 0, len(in))
+	for v := range in {
+		out = append(out, v)
+	}
+	return out
 }
