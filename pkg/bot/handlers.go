@@ -457,6 +457,42 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 		return
 	}
 
+	b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
+		InlineMessageID: update.CallbackQuery.InlineMessageID,
+		Media: &models.InputMediaAnimation{
+			Media:     "https://i.pinimg.com/originals/32/37/bf/3237bf1e172a6089e0c437ffd3b28010.gif",
+			Caption:   fmt.Sprintf("Рулетка Маятина началась! Выбирайте ваш слот в рулетке!\nСтавка 100.000, слот 'Уважаемый коллега дает 10x выигрыш, но выпадает реже'\nОсталось 15 секунд!"),
+			ParseMode: models.ParseModeHTML,
+			//HasSpoiler: true,
+		},
+		ReplyMarkup: models.InlineKeyboardMarkup{InlineKeyboard: [][]models.InlineKeyboardButton{
+			{
+				models.InlineKeyboardButton{
+					Text:         fmt.Sprintf("Надёжность! (0 ставок)"),
+					CallbackData: patternMayatinRouletteBet + patternMayatinRouletteBetN,
+				},
+			},
+			{
+				models.InlineKeyboardButton{
+					Text:         fmt.Sprintf("Производительность! (0 ставок)"),
+					CallbackData: patternMayatinRouletteBet + patternMayatinRouletteBetP,
+				},
+			},
+			{
+				models.InlineKeyboardButton{
+					Text:         fmt.Sprintf("Безопасность! (0 ставок)"),
+					CallbackData: patternMayatinRouletteBet + patternMayatinRouletteBetB,
+				},
+			},
+			{
+				models.InlineKeyboardButton{
+					Text:         fmt.Sprintf("Уважаемый коллега 😎 (10x выигрыш, 0 ставок)"),
+					CallbackData: patternMayatinRouletteBet + patternMayatinRouletteBetU,
+				},
+			},
+		}},
+	})
+
 	bs.mayatinRouletteBets = new(sync.Map)
 	bs.isMayatinRouletteActive = true
 	bs.mayatinRouletteUsers = make(map[int]struct{})
@@ -475,14 +511,9 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 			return
 		}
 
-		b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
+		_, err = b.EditMessageCaption(ctx, &bot.EditMessageCaptionParams{
+			Caption:         fmt.Sprintf("Рулетка Маятина началась! Выбирайте ваш слот в рулетке!\nСтавка 100.000, слот 'Уважаемый коллега дает 10x выигрыш, но выпадает реже'\nОсталось %d секунд!", 15-i),
 			InlineMessageID: update.CallbackQuery.InlineMessageID,
-			Media: &models.InputMediaAnimation{
-				Media:     "https://i.pinimg.com/originals/32/37/bf/3237bf1e172a6089e0c437ffd3b28010.gif",
-				Caption:   fmt.Sprintf("Рулетка Маятина началась! Выбирайте ваш слот в рулетке!\nСтавка 100.000, слот 'Уважаемый коллега дает 10x выигрыш, но выпадает реже'\nОсталось %d секунд!", 15-i),
-				ParseMode: models.ParseModeHTML,
-				//HasSpoiler: true,
-			},
 			ReplyMarkup: models.InlineKeyboardMarkup{InlineKeyboard: [][]models.InlineKeyboardButton{
 				{
 					models.InlineKeyboardButton{
@@ -510,6 +541,9 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 				},
 			}},
 		})
+		if err != nil && strings.Contains(err.Error(), "error decode response body for method") {
+			bs.Errorf("%v", err)
+		}
 		time.Sleep(1 * time.Second)
 	}
 
