@@ -410,7 +410,7 @@ func (bs *BotService) BuyBackHandler(ctx context.Context, b *bot.Bot, update *mo
 		InlineMessageID: update.CallbackQuery.InlineMessageID,
 		Media: &models.InputMediaPhoto{
 			Media:     "https://i.ibb.co/6R0Cz78Q/image-4.jpg",
-			Caption:   fmt.Sprintf("Вы откупились! Счетчик ваших проданных квартир: %d\nНажмите на название бота и проиграйте всё снова, или может быть сегодня вам повезет попасть в топ рейтинга?)", user.Losses),
+			Caption:   fmt.Sprintf("Вы откупились! Счетчик ваших проданных квартир: %d\nНажмите на название бота и проиграйте всё снова, или может быть сегодня вам повезет попасть в топ рейтинга?)\n\np.s. поставьте звездочку в гитхабе 👉👈 https://github.com/kroexov/gradeBot/tree/ludomania", user.Losses),
 			ParseMode: models.ParseModeHTML,
 			//HasSpoiler: true,
 		},
