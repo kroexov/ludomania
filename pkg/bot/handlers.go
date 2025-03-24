@@ -335,15 +335,19 @@ func (bs *BotService) lossHandler(ctx context.Context, b *bot.Bot, update *model
 }
 
 func (bs *BotService) PlayersRatingHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
-	players, err := bs.cr.LudomenByFilters(ctx, &db.LudomanSearch{}, db.Pager{PageSize: 10}, db.WithSort(db.NewSortField(db.Columns.Ludoman.Balance, true)))
+	players, err := bs.cr.LudomenByFilters(ctx, &db.LudomanSearch{}, db.Pager{PageSize: 10}, db.WithSort(db.NewSortField(db.Columns.Ludoman.Balance, true), db.NewSortField(db.Columns.Ludoman.Losses, false)))
+	if err != nil {
+		bs.Errorf("%v", err)
+		return
+	}
+	ludomans, err := bs.cr.LudomenByFilters(ctx, &db.LudomanSearch{}, db.Pager{PageSize: 10}, db.WithSort(db.NewSortField(db.Columns.Ludoman.Losses, true)))
 	if err != nil {
 		bs.Errorf("%v", err)
 		return
 	}
 
 	// Шаблон для вывода списка
-	listTemplate := `Список игроков:
-{{- range $index, $ludoman := . }}
+	listTemplate := `{{- range $index, $ludoman := . }}
 {{- printf "\n%d. Никнейм: @%s, Баланс: %d, Всего проигрышей: %d" (add $index 1) $ludoman.LudomanNickname $ludoman.Balance $ludoman.Losses}}
 {{- end }}
 `
@@ -361,6 +365,7 @@ func (bs *BotService) PlayersRatingHandler(ctx context.Context, b *bot.Bot, upda
 	}
 
 	var buf bytes.Buffer
+	var bufLosses bytes.Buffer
 
 	// Выполняем шаблон и выводим результат
 	err = tmpl.Execute(&buf, players)
@@ -368,9 +373,15 @@ func (bs *BotService) PlayersRatingHandler(ctx context.Context, b *bot.Bot, upda
 		bs.Errorf("%v", err)
 	}
 
+	// Выполняем шаблон и выводим результат
+	err = tmpl.Execute(&bufLosses, ludomans)
+	if err != nil {
+		bs.Errorf("%v", err)
+	}
+
 	_, err = b.EditMessageText(ctx, &bot.EditMessageTextParams{
 		InlineMessageID: update.CallbackQuery.InlineMessageID,
-		Text:            buf.String(),
+		Text:            "Список топ игроков:" + buf.String() + "\n\nСписок топ лудоманов:" + bufLosses.String(),
 	})
 	if err != nil {
 		bs.Errorf("%v", err)
