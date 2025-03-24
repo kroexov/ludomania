@@ -550,7 +550,7 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 				},
 			}},
 		})
-		if err != nil && strings.Contains(err.Error(), "error decode response body for method") {
+		if err != nil {
 			bs.Errorf("%v", err)
 		}
 		bs.mu.Unlock()
