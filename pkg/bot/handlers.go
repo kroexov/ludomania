@@ -303,7 +303,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 
 	pic := slotsResults[num]
 
-	b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
+	_, err = b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
 		InlineMessageID: update.CallbackQuery.InlineMessageID,
 		Media: &models.InputMediaPhoto{
 			Media:     pic,
@@ -320,6 +320,39 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 			},
 		}},
 	})
+
+	if err != nil {
+		bs.Errorf("%v", err)
+		if strings.Contains(err.Error(), "retry_after") {
+			retryAfter := strings.Split(err.Error(), " ")
+			retryAfterTime := retryAfter[len(retryAfter)-1]
+			retryTime, err := strconv.Atoi(retryAfterTime)
+			if err != nil {
+				bs.Errorf("%v", err)
+				return
+			}
+			time.Sleep(time.Duration(retryTime) * time.Second)
+			errorMsg := fmt.Sprintf("Извините, бот задерживается из-за перегруза запросов.\nЗадержка:%ds", retryTime)
+
+			_, err = b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
+				InlineMessageID: update.CallbackQuery.InlineMessageID,
+				Media: &models.InputMediaPhoto{
+					Media:     pic,
+					Caption:   res + "\n" + errorMsg,
+					ParseMode: models.ParseModeHTML,
+					//HasSpoiler: true,
+				},
+				ReplyMarkup: models.InlineKeyboardMarkup{InlineKeyboard: [][]models.InlineKeyboardButton{
+					{
+						models.InlineKeyboardButton{
+							Text:         "Сыграть ещё раз",
+							CallbackData: patternPapikSlots + "_" + parts[1],
+						},
+					},
+				}},
+			})
+		}
+	}
 
 	_, err = bs.cr.UpdateLudoman(ctx, user, db.WithColumns(db.Columns.Ludoman.Balance))
 	if err != nil {
@@ -532,10 +565,12 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 	bs.mayatinRouletteUsers = make(map[int]struct{})
 	bs.mayatinCategoriesVotes = make(map[string]int)
 
-	for i := 0; i < 10; i++ {
+	var errorMsg string
+
+	for i := 0; i < 15; i++ {
 		bs.mu.Lock()
 		_, err = b.EditMessageCaption(ctx, &bot.EditMessageCaptionParams{
-			Caption:         fmt.Sprintf("Рулетка Маятина началась! Выбирайте ваш слот в рулетке!\nСтавка 100.000, слот 'Уважаемый коллега дает 10x выигрыш, но выпадает реже'\nОсталось %d секунд!", (10-i)*2),
+			Caption:         fmt.Sprintf("Рулетка Маятина началась! Выбирайте ваш слот в рулетке!\nСтавка 100.000, слот 'Уважаемый коллега дает 10x выигрыш, но выпадает реже'\nОсталось %d секунд!\n%s", 15-i, errorMsg),
 			InlineMessageID: update.CallbackQuery.InlineMessageID,
 			ReplyMarkup: models.InlineKeyboardMarkup{InlineKeyboard: [][]models.InlineKeyboardButton{
 				{
@@ -566,6 +601,17 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 		})
 		if err != nil {
 			bs.Errorf("%v", err)
+			if strings.Contains(err.Error(), "retry_after") {
+				retryAfter := strings.Split(err.Error(), " ")
+				retryAfterTime := retryAfter[len(retryAfter)-1]
+				retryTime, err := strconv.Atoi(retryAfterTime)
+				if err != nil {
+					bs.Errorf("%v", err)
+					return
+				}
+				time.Sleep(time.Duration(retryTime) * time.Second)
+				errorMsg = fmt.Sprintf("Извините, бот задерживается из-за перегруза запросов.\nЗадержка:%ds", retryTime)
+			}
 		}
 		bs.mu.Unlock()
 		time.Sleep(2 * time.Second)
