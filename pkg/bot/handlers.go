@@ -518,10 +518,10 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 	bs.mayatinRouletteUsers = make(map[int]struct{})
 	bs.mayatinCategoriesVotes = make(map[string]int)
 
-	for i := 0; i < 15; i++ {
+	for i := 0; i < 10; i++ {
 		bs.mu.Lock()
 		_, err = b.EditMessageCaption(ctx, &bot.EditMessageCaptionParams{
-			Caption:         fmt.Sprintf("Рулетка Маятина началась! Выбирайте ваш слот в рулетке!\nСтавка 100.000, слот 'Уважаемый коллега дает 10x выигрыш, но выпадает реже'\nОсталось %d секунд!", 15-i),
+			Caption:         fmt.Sprintf("Рулетка Маятина началась! Выбирайте ваш слот в рулетке!\nСтавка 100.000, слот 'Уважаемый коллега дает 10x выигрыш, но выпадает реже'\nОсталось %d секунд!", (10-i)*3),
 			InlineMessageID: update.CallbackQuery.InlineMessageID,
 			ReplyMarkup: models.InlineKeyboardMarkup{InlineKeyboard: [][]models.InlineKeyboardButton{
 				{
@@ -554,7 +554,7 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 			bs.Errorf("%v", err)
 		}
 		bs.mu.Unlock()
-		time.Sleep(1 * time.Second)
+		time.Sleep(3 * time.Second)
 	}
 
 	i := rand.Intn(100)
