@@ -65,9 +65,12 @@ func (a *App) Run() error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 	a.bs.RegisterBotHandlers(a.b)
-	a.b.SetWebhook(ctx, &bot.SetWebhookParams{
+	_, err := a.b.SetWebhook(ctx, &bot.SetWebhookParams{
 		URL: fmt.Sprintf("https://%s/isl/", a.cfg.Server.Host),
 	})
+	if err != nil {
+		panic(err)
+	}
 	go a.b.StartWebhook(ctx)
 	return http.ListenAndServe(fmt.Sprintf(":%d", a.cfg.Server.Port), a.b.WebhookHandler())
 }
