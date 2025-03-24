@@ -322,7 +322,9 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 	})
 
 	if err != nil {
-		bs.Errorf("%v", err)
+		if !strings.Contains(err.Error(), "cannot unmarshal bool") {
+			bs.Errorf("%v", err)
+		}
 		if strings.Contains(err.Error(), "retry_after") {
 			retryAfter := strings.Split(err.Error(), " ")
 			retryAfterTime := retryAfter[len(retryAfter)-1]
@@ -334,7 +336,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 			time.Sleep(time.Duration(retryTime) * time.Second)
 			errorMsg := fmt.Sprintf("Извините, бот задерживается из-за перегруза запросов.\nЗадержка:%ds", retryTime)
 
-			_, err = b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
+			b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
 				InlineMessageID: update.CallbackQuery.InlineMessageID,
 				Media: &models.InputMediaPhoto{
 					Media:     pic,
@@ -600,7 +602,10 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 			}},
 		})
 		if err != nil {
-			bs.Errorf("%v", err)
+			if !strings.Contains(err.Error(), "cannot unmarshal bool") {
+				bs.Errorf("%v", err)
+			}
+
 			if strings.Contains(err.Error(), "retry_after") {
 				retryAfter := strings.Split(err.Error(), " ")
 				retryAfterTime := retryAfter[len(retryAfter)-1]
