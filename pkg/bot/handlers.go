@@ -80,6 +80,7 @@ type BotService struct {
 	mu                      sync.Mutex
 	isMayatinRouletteActive bool
 	mayatinRouletteUsers    map[int]struct{}
+	mayatinCategoriesVotes  map[string]int
 }
 
 func NewBotService(logger embedlog.Logger, dbo db.DB) *BotService {
@@ -514,51 +515,36 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 
 	bs.mayatinRouletteBets = new(sync.Map)
 	bs.isMayatinRouletteActive = true
-	bs.mu.Lock()
 	bs.mayatinRouletteUsers = make(map[int]struct{})
-	bs.mayatinRouletteBets.Store(patternMayatinRoulette, map[string][]int{})
-	bs.mu.Unlock()
+	bs.mayatinCategoriesVotes = make(map[string]int)
 
 	for i := 0; i < 15; i++ {
 		bs.mu.Lock()
-		v, ok := bs.mayatinRouletteBets.Load(patternMayatinRoulette)
-		if !ok {
-			bs.Errorf("not found syncMap")
-			return
-		}
-
-		bets, ok := v.(map[string][]int)
-		if !ok {
-			bs.Errorf("can't convert bets")
-			return
-		}
-		bs.mu.Unlock()
-
 		_, err = b.EditMessageCaption(ctx, &bot.EditMessageCaptionParams{
 			Caption:         fmt.Sprintf("Рулетка Маятина началась! Выбирайте ваш слот в рулетке!\nСтавка 100.000, слот 'Уважаемый коллега дает 10x выигрыш, но выпадает реже'\nОсталось %d секунд!", 15-i),
 			InlineMessageID: update.CallbackQuery.InlineMessageID,
 			ReplyMarkup: models.InlineKeyboardMarkup{InlineKeyboard: [][]models.InlineKeyboardButton{
 				{
 					models.InlineKeyboardButton{
-						Text:         fmt.Sprintf("Надёжность! (%d ставок)", len(bets[patternMayatinRouletteBetN])),
+						Text:         fmt.Sprintf("Надёжность! (%d ставок)", bs.mayatinCategoriesVotes[patternMayatinRouletteBetN]),
 						CallbackData: patternMayatinRouletteBet + patternMayatinRouletteBetN,
 					},
 				},
 				{
 					models.InlineKeyboardButton{
-						Text:         fmt.Sprintf("Производительность! (%d ставок)", len(bets[patternMayatinRouletteBetP])),
+						Text:         fmt.Sprintf("Производительность! (%d ставок)", bs.mayatinCategoriesVotes[patternMayatinRouletteBetP]),
 						CallbackData: patternMayatinRouletteBet + patternMayatinRouletteBetP,
 					},
 				},
 				{
 					models.InlineKeyboardButton{
-						Text:         fmt.Sprintf("Безопасность! (%d ставок)", len(bets[patternMayatinRouletteBetB])),
+						Text:         fmt.Sprintf("Безопасность! (%d ставок)", bs.mayatinCategoriesVotes[patternMayatinRouletteBetB]),
 						CallbackData: patternMayatinRouletteBet + patternMayatinRouletteBetB,
 					},
 				},
 				{
 					models.InlineKeyboardButton{
-						Text:         fmt.Sprintf("Уважаемый коллега 😎 (10x выигрыш, %d ставок)", len(bets[patternMayatinRouletteBetU])),
+						Text:         fmt.Sprintf("Уважаемый коллега 😎 (10x выигрыш, %d ставок)", bs.mayatinCategoriesVotes[patternMayatinRouletteBetU]),
 						CallbackData: patternMayatinRouletteBet + patternMayatinRouletteBetU,
 					},
 				},
@@ -567,6 +553,7 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 		if err != nil && strings.Contains(err.Error(), "error decode response body for method") {
 			bs.Errorf("%v", err)
 		}
+		bs.mu.Unlock()
 		time.Sleep(1 * time.Second)
 	}
 
@@ -584,26 +571,21 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 	}
 	cat := mayatinCategories[selectedCategory]
 
-	bs.mu.Lock()
-	v, ok := bs.mayatinRouletteBets.Load(patternMayatinRoulette)
-	if !ok {
-		bs.Errorf("not found syncMap")
-		return
-	}
-
-	bets, ok := v.(map[string][]int)
-	if !ok {
-		bs.Errorf("can't convert bets")
-		return
-	}
-	bs.mu.Unlock()
+	var winners []int
+	// Iterating over sync.Map
+	bs.mayatinRouletteBets.Range(func(key, value interface{}) bool {
+		println(key.(int), value.(string))
+		if value.(string) == selectedCategory {
+			winners = append(winners, key.(int))
+		}
+		return true
+	})
 
 	if len(bs.mayatinRouletteUsers) > 0 {
 		bs.db.Exec(`update ludomans set balance = balance - 100000 where "ludomanId" in (?)`, pg.In(intKeys(bs.mayatinRouletteUsers)))
 	}
 
 	var result string
-	winners := bets[selectedCategory]
 	if len(winners) == 0 {
 		result = `Победителей нет 🫵😹`
 	} else {
@@ -692,22 +674,10 @@ func (bs *BotService) MayatinRouletteBetHandler(ctx context.Context, b *bot.Bot,
 
 	bs.mayatinRouletteUsers[user.ID] = struct{}{}
 	bs.mu.Lock()
-	v, ok := bs.mayatinRouletteBets.Load(patternMayatinRoulette)
-	if !ok {
-		bs.Errorf("not found syncMap")
-		return
-	}
-
-	bets, ok := v.(map[string][]int)
-	if !ok {
-		bs.Errorf("can't convert bets")
-		return
-	}
-
-	newBets := append(bets["_"+userBet], user.ID)
-	bets["_"+userBet] = newBets
-	bs.mayatinRouletteBets.Store(patternMayatinRoulette, bets)
+	bs.mayatinCategoriesVotes["_"+userBet]++
 	bs.mu.Unlock()
+
+	bs.mayatinRouletteBets.Store(user.ID, "_"+userBet)
 }
 
 func Pointer[T any](in T) *T {
