@@ -81,10 +81,12 @@ type BotService struct {
 	isMayatinRouletteActive bool
 	mayatinRouletteUsers    map[int]struct{}
 	mayatinCategoriesVotes  map[string]int
+
+	papikyanLock map[int]struct{}
 }
 
 func NewBotService(logger embedlog.Logger, dbo db.DB) *BotService {
-	return &BotService{Logger: logger, db: dbo, cr: db.NewCommonRepo(dbo), mayatinRouletteBets: new(sync.Map)}
+	return &BotService{Logger: logger, db: dbo, cr: db.NewCommonRepo(dbo), mayatinRouletteBets: new(sync.Map), papikyanLock: make(map[int]struct{})}
 }
 
 func (bs *BotService) RegisterBotHandlers(b *bot.Bot) {
@@ -251,6 +253,15 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 		bs.Errorf("%v", err)
 	}
 
+	if _, ok := bs.papikyanLock[user.ID]; ok {
+		_, err = b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+			CallbackQueryID: update.CallbackQuery.ID,
+			Text:            "Шалунишка, так нельзя :)",
+			ShowAlert:       true,
+		})
+		return
+	}
+
 	if user.LudomanNickname != update.CallbackQuery.From.Username {
 		_, err = b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
 			CallbackQueryID: update.CallbackQuery.ID,
@@ -264,6 +275,8 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 		bs.lossHandler(ctx, b, update, parts[1])
 		return
 	}
+
+	bs.papikyanLock[user.ID] = struct{}{}
 
 	b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
 		InlineMessageID: update.CallbackQuery.InlineMessageID,
@@ -313,6 +326,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 		bs.Errorf("%v", err)
 		return
 	}
+	delete(bs.papikyanLock, user.ID)
 }
 
 func (bs *BotService) lossHandler(ctx context.Context, b *bot.Bot, update *models.Update, userId string) {
@@ -672,8 +686,8 @@ func (bs *BotService) MayatinRouletteBetHandler(ctx context.Context, b *bot.Bot,
 		return
 	}
 
-	bs.mayatinRouletteUsers[user.ID] = struct{}{}
 	bs.mu.Lock()
+	bs.mayatinRouletteUsers[user.ID] = struct{}{}
 	bs.mayatinCategoriesVotes["_"+userBet]++
 	bs.mu.Unlock()
 
