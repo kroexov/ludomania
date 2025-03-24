@@ -288,7 +288,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 		},
 	})
 
-	time.Sleep(3 * time.Second)
+	time.Sleep(5 * time.Second)
 
 	num := rand.Intn(len(slotsResults))
 	var res string
@@ -619,7 +619,7 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 			}
 		}
 		bs.mu.Unlock()
-		time.Sleep(2 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
 
 	i := rand.Intn(100)
