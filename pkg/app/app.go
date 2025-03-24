@@ -66,7 +66,7 @@ func (a *App) Run() error {
 	defer cancel()
 	a.bs.RegisterBotHandlers(a.b)
 	a.b.SetWebhook(ctx, &bot.SetWebhookParams{
-		URL: fmt.Sprintf("http://%s:%d", a.cfg.Server.Host, a.cfg.Server.Port),
+		URL: fmt.Sprintf("https://%s/isl/", a.cfg.Server.Host),
 	})
 	go a.b.StartWebhook(ctx)
 	return http.ListenAndServe(fmt.Sprintf(":%d", a.cfg.Server.Port), a.b.WebhookHandler())
