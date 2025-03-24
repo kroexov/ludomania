@@ -2,6 +2,10 @@ package app
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"os"
+	"os/signal"
 	"time"
 
 	botService "gradebot/pkg/bot"
@@ -56,10 +60,19 @@ func New(appName string, verbose bool, cfg Config, db db.DB, dbc *pg.DB) *App {
 	return a
 }
 
+// Run is a function that runs application.
 func (a *App) Run() error {
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
 	a.bs.RegisterBotHandlers(a.b)
-	go a.b.Start(context.TODO())
-	return nil
+	_, err := a.b.SetWebhook(ctx, &bot.SetWebhookParams{
+		URL: fmt.Sprintf("https://%s/isl/", a.cfg.Server.Host),
+	})
+	if err != nil {
+		panic(err)
+	}
+	go a.b.StartWebhook(ctx)
+	return http.ListenAndServe(fmt.Sprintf(":%d", a.cfg.Server.Port), a.b.WebhookHandler())
 }
 
 // Shutdown is a function that gracefully stops HTTP server.
