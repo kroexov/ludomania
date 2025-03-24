@@ -95,6 +95,13 @@ func (bs *BotService) RegisterBotHandlers(b *bot.Bot) {
 }
 
 func (bs *BotService) DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	if update.Message != nil && update.Message.ViaBot != nil && update.Message.Chat.Type == models.ChatTypeSupergroup && update.Message.ViaBot.ID == 7672429736 && update.Message.MessageThreadID != 8388 {
+		_, err := b.DeleteMessage(ctx, &bot.DeleteMessageParams{ChatID: update.Message.Chat.ID, MessageID: update.Message.ID})
+		if err != nil {
+			bs.Errorf("%v", err)
+			return
+		}
+	}
 	if update.InlineQuery != nil && update.InlineQuery.From != nil {
 		if err := bs.answerInlineQuery(ctx, b, update); err != nil {
 			bs.Errorf("%v", err)
