@@ -279,6 +279,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 	}
 
 	bs.papikyanLock[user.ID] = struct{}{}
+	defer delete(bs.papikyanLock, user.ID)
 
 	b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
 		InlineMessageID: update.CallbackQuery.InlineMessageID,
@@ -369,7 +370,6 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 		bs.Errorf("%v", err)
 		return
 	}
-	delete(bs.papikyanLock, user.ID)
 }
 
 func (bs *BotService) lossHandler(ctx context.Context, b *bot.Bot, update *models.Update, userId string) {
@@ -406,7 +406,7 @@ func (bs *BotService) PlayersRatingHandler(ctx context.Context, b *bot.Bot, upda
 
 	// Шаблон для вывода списка
 	listTemplate := `{{- range $index, $ludoman := . }}
-{{- printf "\n%d. Никнейм: @%s, Баланс: %d, Всего проигрышей: %d" (add $index 1) $ludoman.LudomanNickname $ludoman.Balance $ludoman.Losses}}
+{{- printf "\n%d. Никнейм: @%s, Баланс: %d, Квартир продано: %d" (add $index 1) $ludoman.LudomanNickname $ludoman.Balance $ludoman.Losses}}
 {{- end }}
 `
 	// Функция для добавления 1 к индексу (так как индексация с 0)
