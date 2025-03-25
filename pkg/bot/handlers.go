@@ -42,6 +42,8 @@ var slotsResults = [7]string{
 	"https://i.ibb.co/rRBVsQJC/photo-2025-03-21-18-45-27.jpg",
 }
 
+var jackPotPapikyan = "https://i.ibb.co/3yPD09VM/image.png"
+
 type MayatinRouletteCategory struct {
 	CategoryName string
 	CategoryPic  string
@@ -302,6 +304,12 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 	}
 
 	pic := slotsResults[num]
+
+	if rand.Intn(101) == 100 {
+		user.Balance += 10000000
+		res = fmt.Sprintf("@%s, ДЖЕКПОТ! Вы получаете +10.000.000 I$Coins. Ваш текущий баланс: %d I$Coins", update.CallbackQuery.From.Username, user.Balance)
+		pic = jackPotPapikyan
+	}
 
 	_, err = b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
 		InlineMessageID: update.CallbackQuery.InlineMessageID,
