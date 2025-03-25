@@ -292,7 +292,15 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 	}
 
 	if user.Balance < 100000*koef {
-		bs.lossHandler(ctx, b, update, parts[1])
+		if user.Balance < 100000 {
+			bs.lossHandler(ctx, b, update, parts[1])
+			return
+		}
+		_, err = b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+			CallbackQueryID: update.CallbackQuery.ID,
+			Text:            "У вас недостаточно денег для этой ставки :/",
+			ShowAlert:       true,
+		})
 		return
 	}
 
