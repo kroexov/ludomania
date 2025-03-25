@@ -59,22 +59,22 @@ var mayatinCategories = map[string]MayatinRouletteCategory{
 	patternMayatinRouletteBetN: {
 		CategoryName: "Надежность",
 		CategoryPic:  "https://i.ibb.co/mCxMpSdk/image.png",
-		WinSum:       300000,
+		WinSum:       1500000,
 	},
 	patternMayatinRouletteBetP: {
 		CategoryName: "Производительность",
 		CategoryPic:  "https://i.ibb.co/Zpqh23VB/image.png",
-		WinSum:       300000,
+		WinSum:       1500000,
 	},
 	patternMayatinRouletteBetB: {
 		CategoryName: "Безопасность",
 		CategoryPic:  "https://i.ibb.co/WNbKBsrp/image.png",
-		WinSum:       300000,
+		WinSum:       1500000,
 	},
 	patternMayatinRouletteBetU: {
 		CategoryName: "Уважаемый коллега",
 		CategoryPic:  "https://i.ibb.co/DPjH6ym5/image.png",
-		WinSum:       1000000,
+		WinSum:       5000000,
 	},
 }
 
@@ -585,7 +585,7 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 		InlineMessageID: update.CallbackQuery.InlineMessageID,
 		Media: &models.InputMediaAnimation{
 			Media:     "https://i.pinimg.com/originals/32/37/bf/3237bf1e172a6089e0c437ffd3b28010.gif",
-			Caption:   fmt.Sprintf("Рулетка Маятина началась! Выбирайте ваш слот в рулетке!\nСтавка 100.000, слот 'Уважаемый коллега дает 10x выигрыш, но выпадает реже'\nОсталось 20 секунд!"),
+			Caption:   fmt.Sprintf("Рулетка Маятина началась! Выбирайте ваш слот в рулетке!\nСтавка 500.000, слот 'Уважаемый коллега дает 10x выигрыш, но выпадает реже'\nОсталось 20 секунд!"),
 			ParseMode: models.ParseModeHTML,
 			//HasSpoiler: true,
 		},
@@ -701,7 +701,7 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 		return true
 	})
 
-	err = bs.updateBalance(-100000, intKeys(bs.mayatinRouletteUsers))
+	err = bs.updateBalance(-500000, intKeys(bs.mayatinRouletteUsers))
 	if err != nil {
 		bs.Errorf("%v", err)
 		return
@@ -771,7 +771,7 @@ func (bs *BotService) MayatinRouletteBetHandler(ctx context.Context, b *bot.Bot,
 		return
 	}
 
-	if user.Balance < 100000 {
+	if user.Balance < 500000 {
 		_, err = b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
 			CallbackQueryID: update.CallbackQuery.ID,
 			Text:            "У вас недостаточно денег для этой ставки :/",
