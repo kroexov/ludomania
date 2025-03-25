@@ -315,12 +315,12 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 	var res string
 	switch num {
 	case 0:
-		err = bs.updateBalance(500000*koef, []int{user.ID})
+		err = bs.updateBalance(400000*koef, []int{user.ID})
 		if err != nil {
 			bs.Errorf("%v", err)
 			return
 		}
-		res = fmt.Sprintf("@%s, Победа! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 500000*koef), p.Sprintf("%d", user.Balance+500000*koef))
+		res = fmt.Sprintf("@%s, Победа! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 500000*koef), p.Sprintf("%d", user.Balance+400000*koef))
 	default:
 		err = bs.updateBalance(-100000*koef, []int{user.ID})
 		if err != nil {
