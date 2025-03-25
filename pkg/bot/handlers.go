@@ -16,6 +16,9 @@ import (
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
+
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
 const (
@@ -31,6 +34,8 @@ const (
 	patternMayatinRouletteBetB = "_b"
 	patternMayatinRouletteBetU = "_u"
 )
+
+var p = message.NewPrinter(language.German)
 
 var slotsResults = [7]string{
 	"https://i.ibb.co/1YqJpXwW/photo-2025-03-21-18-45-11.jpg",
@@ -147,7 +152,7 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 							{
 								models.InlineKeyboardButton{
 									Text:         "Слоты Папикяна",
-									CallbackData: patternPapikSlots + "_" + strconv.Itoa(newUser.ID),
+									CallbackData: patternPapikSlots + "_" + strconv.Itoa(newUser.ID) + "_1",
 								},
 							},
 							{
@@ -187,7 +192,7 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 							{
 								models.InlineKeyboardButton{
 									Text:         "Слоты Папикяна",
-									CallbackData: patternPapikSlots + "_" + strconv.Itoa(user.ID),
+									CallbackData: patternPapikSlots + "_" + strconv.Itoa(user.ID) + "_1",
 								},
 							},
 							{
@@ -204,7 +209,7 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 							},
 						}},
 					InputMessageContent: &models.InputTextMessageContent{
-						MessageText: fmt.Sprintf("Добро пожаловать в И$ - Казик, @%s!\nВыбирайте игру и побеждайте!", username),
+						MessageText: fmt.Sprintf("Добро пожаловать в И$ - Казик, @%s!\nВаш баланс: %s I$Coins\nВыбирайте игру и побеждайте!", username, p.Sprintf("%d", user.Balance)),
 					}},
 				&models.InlineQueryResultArticle{
 					ID:           "2",
@@ -229,6 +234,13 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 					InputMessageContent: &models.InputTextMessageContent{
 						MessageText: fmt.Sprintf("Добро пожаловать в И$ - Казик, @%s!\nВот список наших развлечений:\n1. Слоты Папикяна. Вход 100.000, шанс на выигрыш 1/7, размер выигрыша 500.000\n2. Рулетка Маятина. Вход 100.000, шансы на выигрыш: 3/10 с возвратом 300.000, либо 1/10 с возвратом 1.000.000\n3. Экзамен Повышева (в разработке). Вход 100.000, шансы на выигрыш 1/6 в размере 500.000, либо взять седьмой \"удачный билет\" с шансом 50/50 и выигрышем 500.000, но ставкой 300.000\n\nВо всех автоматах есть 1/100 шанс на Гигавыигрыш в размере 10.000.000! (в разработке)", username),
 					}},
+				&models.InlineQueryResultArticle{
+					ID:           "4",
+					Title:        "Особые опции 🤭",
+					ThumbnailURL: "https://linda.nyc3.cdn.digitaloceanspaces.com/370_npd_webp-o_18/sticker-fan_11513288_o.webp",
+					InputMessageContent: &models.InputTextMessageContent{
+						MessageText: fmt.Sprintf("🤭🤭🤭🤭🤭🤭🤭"),
+					}},
 			},
 			IsPersonal: true,
 			CacheTime:  1,
@@ -240,8 +252,14 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 
 func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	parts := strings.Split(update.CallbackQuery.Data, "_")
-	if len(parts) < 2 {
-		bs.Errorf("len(parts) < 2")
+	if len(parts) < 3 {
+		bs.Errorf("len(parts) < 3")
+		return
+	}
+
+	koef, err := strconv.Atoi(parts[2])
+	if err != nil {
+		bs.Errorf("%v", err)
 		return
 	}
 
@@ -258,7 +276,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 	if _, ok := bs.papikyanLock[user.ID]; ok {
 		_, err = b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
 			CallbackQueryID: update.CallbackQuery.ID,
-			Text:            "Шалунишка, так нельзя :)",
+			Text:            "Автомат отдыхает, и вы немного отдохните :)",
 			ShowAlert:       true,
 		})
 		return
@@ -273,7 +291,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 		return
 	}
 
-	if user.Balance < 100000 {
+	if user.Balance < 100000*koef {
 		bs.lossHandler(ctx, b, update, parts[1])
 		return
 	}
@@ -297,18 +315,30 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 	var res string
 	switch num {
 	case 0:
-		user.Balance += 500000
-		res = fmt.Sprintf("@%s, Победа! Вы получаете +500.000 I$Coins. Ваш текущий баланс: %d I$Coins", update.CallbackQuery.From.Username, user.Balance)
+		err = bs.updateBalance(500000*koef, []int{user.ID})
+		if err != nil {
+			bs.Errorf("%v", err)
+			return
+		}
+		res = fmt.Sprintf("@%s, Победа! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 500000*koef), p.Sprintf("%d", user.Balance+500000*koef))
 	default:
-		user.Balance -= 100000
-		res = fmt.Sprintf("@%s, Неудача! Ваш текущий баланс: %d I$Coins", update.CallbackQuery.From.Username, user.Balance)
+		err = bs.updateBalance(-100000*koef, []int{user.ID})
+		if err != nil {
+			bs.Errorf("%v", err)
+			return
+		}
+		res = fmt.Sprintf("@%s, Неудача! Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", user.Balance-100000*koef))
 	}
 
 	pic := slotsResults[num]
 
-	if rand.Intn(101) == 100 {
-		user.Balance += 10000000
-		res = fmt.Sprintf("@%s, ДЖЕКПОТ! Вы получаете +10.000.000 I$Coins. Ваш текущий баланс: %d I$Coins", update.CallbackQuery.From.Username, user.Balance)
+	if rand.Intn(201) == 200 {
+		err = bs.updateBalance(10000000*koef, []int{user.ID})
+		if err != nil {
+			bs.Errorf("%v", err)
+			return
+		}
+		res = fmt.Sprintf("@%s, ДЖЕКПОТ! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 10000000*koef), p.Sprintf("%d", 10000000*koef+user.Balance))
 		pic = jackPotPapikyan
 	}
 
@@ -323,8 +353,20 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 		ReplyMarkup: models.InlineKeyboardMarkup{InlineKeyboard: [][]models.InlineKeyboardButton{
 			{
 				models.InlineKeyboardButton{
-					Text:         "Сыграть ещё раз",
-					CallbackData: patternPapikSlots + "_" + parts[1],
+					Text:         "Сыграть на 100k",
+					CallbackData: patternPapikSlots + "_" + parts[1] + "_1",
+				},
+			},
+			{
+				models.InlineKeyboardButton{
+					Text:         "Сыграть на 500k",
+					CallbackData: patternPapikSlots + "_" + parts[1] + "_5",
+				},
+			},
+			{
+				models.InlineKeyboardButton{
+					Text:         "Сыграть на 1m",
+					CallbackData: patternPapikSlots + "_" + parts[1] + "_10",
 				},
 			},
 		}},
@@ -356,19 +398,21 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 				ReplyMarkup: models.InlineKeyboardMarkup{InlineKeyboard: [][]models.InlineKeyboardButton{
 					{
 						models.InlineKeyboardButton{
-							Text:         "Сыграть ещё раз",
-							CallbackData: patternPapikSlots + "_" + parts[1],
+							Text:         "Сыграть на 100k",
+							CallbackData: patternPapikSlots + "_" + parts[1] + "_1",
+						},
+						models.InlineKeyboardButton{
+							Text:         "Сыграть на 500k",
+							CallbackData: patternPapikSlots + "_" + parts[1] + "_5",
+						},
+						models.InlineKeyboardButton{
+							Text:         "Сыграть на 1m",
+							CallbackData: patternPapikSlots + "_" + parts[1] + "_10",
 						},
 					},
 				}},
 			})
 		}
-	}
-
-	_, err = bs.cr.UpdateLudoman(ctx, user, db.WithColumns(db.Columns.Ludoman.Balance))
-	if err != nil {
-		bs.Errorf("%v", err)
-		return
 	}
 }
 
@@ -406,13 +450,16 @@ func (bs *BotService) PlayersRatingHandler(ctx context.Context, b *bot.Bot, upda
 
 	// Шаблон для вывода списка
 	listTemplate := `{{- range $index, $ludoman := . }}
-{{- printf "\n%d. Никнейм: @%s, Баланс: %d, Квартир продано: %d" (add $index 1) $ludoman.LudomanNickname $ludoman.Balance $ludoman.Losses}}
+{{- printf "\n%d. Никнейм: @%s, Баланс: %s, Квартир продано: %d" (add $index 1) $ludoman.LudomanNickname (formatDigit $ludoman.Balance) $ludoman.Losses}}
 {{- end }}
 `
 	// Функция для добавления 1 к индексу (так как индексация с 0)
 	funcMap := template.FuncMap{
 		"add": func(a, b int) int {
 			return a + b
+		},
+		"formatDigit": func(in int) string {
+			return p.Sprintf("%d", in)
 		},
 	}
 
@@ -654,8 +701,10 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 		return true
 	})
 
-	if len(bs.mayatinRouletteUsers) > 0 {
-		bs.db.Exec(`update ludomans set balance = balance - 100000 where "ludomanId" in (?)`, pg.In(intKeys(bs.mayatinRouletteUsers)))
+	err = bs.updateBalance(-100000, intKeys(bs.mayatinRouletteUsers))
+	if err != nil {
+		bs.Errorf("%v", err)
+		return
 	}
 
 	var result string
@@ -670,19 +719,9 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 		for _, winUser := range winUsers {
 			result += "@" + winUser.LudomanNickname + " "
 		}
-		result += fmt.Sprintf("\nПобедителям начислено: %d", cat.WinSum)
+		result += fmt.Sprintf("\nПобедителям начислено: %s", p.Sprintf("%d", cat.WinSum))
 
-		err = bs.db.RunInTransaction(ctx, func(tx *pg.Tx) error {
-			for _, winUser := range winUsers {
-				crTx := bs.cr.WithTransaction(tx)
-				winUser.Balance += cat.WinSum
-				_, err = crTx.UpdateLudoman(ctx, &winUser, db.WithColumns(db.Columns.Ludoman.Balance))
-				if err != nil {
-					return err
-				}
-			}
-			return nil
-		})
+		err = bs.updateBalance(cat.WinSum, db.Ludomans(winUsers).IDs())
 		if err != nil {
 			bs.Errorf("%v", err)
 			return
@@ -763,4 +802,12 @@ func intKeys(in map[int]struct{}) []int {
 		out = append(out, v)
 	}
 	return out
+}
+
+func (bs *BotService) updateBalance(sum int, ids []int) error {
+	if len(ids) > 0 {
+		_, err := bs.db.Exec(`update ludomans set balance = balance + ? where "ludomanId" in (?)`, sum, pg.In(ids))
+		return err
+	}
+	return nil
 }
