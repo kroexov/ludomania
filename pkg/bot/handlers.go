@@ -309,7 +309,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 
 	b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
 		InlineMessageID: update.CallbackQuery.InlineMessageID,
-		Media: &models.InputMediaAnimation{
+		Media: &models.InputMediaVideo{
 			Media:     "https://media.tenor.com/_yoDqyYP8aYAAAAM/casino77-slot-machine.gif",
 			Caption:   "Крутимся...",
 			ParseMode: models.ParseModeHTML,
@@ -409,10 +409,14 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 							Text:         "Сыграть на 100k",
 							CallbackData: patternPapikSlots + "_" + parts[1] + "_1",
 						},
+					},
+					{
 						models.InlineKeyboardButton{
 							Text:         "Сыграть на 500k",
 							CallbackData: patternPapikSlots + "_" + parts[1] + "_5",
 						},
+					},
+					{
 						models.InlineKeyboardButton{
 							Text:         "Сыграть на 1m",
 							CallbackData: patternPapikSlots + "_" + parts[1] + "_10",
@@ -591,7 +595,7 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 
 	b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
 		InlineMessageID: update.CallbackQuery.InlineMessageID,
-		Media: &models.InputMediaAnimation{
+		Media: &models.InputMediaVideo{
 			Media:     "https://i.pinimg.com/originals/32/37/bf/3237bf1e172a6089e0c437ffd3b28010.gif",
 			Caption:   fmt.Sprintf("Рулетка Маятина началась! Выбирайте ваш слот в рулетке!\nСтавка 500.000, слот 'Уважаемый коллега дает 10x выигрыш, но выпадает реже'\nОсталось 20 секунд!"),
 			ParseMode: models.ParseModeHTML,
