@@ -431,8 +431,8 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 func (bs *BotService) lossHandler(ctx context.Context, b *bot.Bot, update *models.Update, userId string) {
 	b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
 		InlineMessageID: update.CallbackQuery.InlineMessageID,
-		Media: &models.InputMediaPhoto{
-			Media:     "https://i.ibb.co/8C2G9X9/image.png",
+		Media: &models.InputMediaVideo{
+			Media:     "https://media.tenor.com/aSkdq3IU0g0AAAAM/laughing-cat.gif",
 			Caption:   "Вы израходовали свой баланс!",
 			ParseMode: models.ParseModeHTML,
 			//HasSpoiler: true,
