@@ -185,7 +185,7 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 			InlineQueryID: update.InlineQuery.ID,
 			Results: []models.InlineQueryResult{
 				&models.InlineQueryResultArticle{
-					ID:           "1",
+					ID:           "2",
 					Title:        "Выберите игру!",
 					ThumbnailURL: "https://i.ibb.co/Xfx3C5wH/image-1.jpg",
 					ReplyMarkup: models.InlineKeyboardMarkup{
@@ -213,7 +213,7 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 						MessageText: fmt.Sprintf("Добро пожаловать в И$ - Казик, @%s!\nВаш баланс: %s I$Coins\nВыбирайте игру и побеждайте!", username, p.Sprintf("%d", user.Balance)),
 					}},
 				&models.InlineQueryResultArticle{
-					ID:           "2",
+					ID:           "3",
 					Title:        "Рейтинг игроков!",
 					ThumbnailURL: "https://russia-rating.ru/wp-content/uploads/2024/09/567.jpg",
 					ReplyMarkup: models.InlineKeyboardMarkup{
@@ -229,18 +229,28 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 						MessageText: fmt.Sprintf("Добро пожаловать в И$ - Казик, @%s!\nНажмите кнопку ниже, чтобы узнать рейтинг игроков!", username),
 					}},
 				&models.InlineQueryResultArticle{
-					ID:           "3",
+					ID:           "4",
 					Title:        "Правила",
 					ThumbnailURL: "https://casino.ru/wp-content/uploads/articles/poker/poker-1-400x266.jpg",
 					InputMessageContent: &models.InputTextMessageContent{
 						MessageText: fmt.Sprintf("Добро пожаловать в И$ - Казик, @%s!\nВот список наших развлечений:\n1. Слоты Папикяна. Вход 100.000, шанс на выигрыш 1/7, размер выигрыша 500.000\n2. Рулетка Маятина. Вход 100.000, шансы на выигрыш: 3/10 с возвратом 300.000, либо 1/10 с возвратом 1.000.000\n3. Экзамен Повышева (в разработке). Вход 100.000, шансы на выигрыш 1/6 в размере 500.000, либо взять седьмой \"удачный билет\" с шансом 50/50 и выигрышем 500.000, но ставкой 300.000\n\nВо всех автоматах есть 1/100 шанс на Гигавыигрыш в размере 10.000.000! (в разработке)", username),
 					}},
 				&models.InlineQueryResultArticle{
-					ID:           "4",
+					ID:           "5",
 					Title:        "Особые опции 🤭",
 					ThumbnailURL: "https://linda.nyc3.cdn.digitaloceanspaces.com/370_npd_webp-o_18/sticker-fan_11513288_o.webp",
 					InputMessageContent: &models.InputTextMessageContent{
 						MessageText: fmt.Sprintf("🤭🤭🤭🤭🤭🤭🤭"),
+					}},
+				&models.InlineQueryResultGif{
+					ID:                "6",
+					GifURL:            "https://img2.vombat.su/images/post/big/2024/09/12/17261016664048.gif?class=max",
+					ThumbnailURL:      "https://img2.vombat.su/images/post/big/2024/09/12/17261016664048.gif?class=max",
+					ThumbnailMimeType: "image/gif",
+					InputMessageContent: &models.InputTextMessageContent{
+						MessageText: `Рекламная интеграция\!
+||Лучший мини апп [полка](https://t.me/polkabot_news) зарелизился и ждет клиентов\. Будьте первыми\!||`,
+						ParseMode: models.ParseModeMarkdown,
 					}},
 			},
 			IsPersonal: true,
