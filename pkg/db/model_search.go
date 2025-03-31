@@ -55,8 +55,11 @@ type LudomanSearch struct {
 
 	ID                   *int
 	LudomanNickname      *string
-	Balance              *int
-	Losses               *int
+	TgID                 *int64
+	Balance              *int64
+	Losses               *int64
+	TotalLost            *int64
+	TotalWon             *int64
 	IDs                  []int
 	LudomanNicknameILike *string
 }
@@ -71,11 +74,20 @@ func (ls *LudomanSearch) Apply(query *orm.Query) *orm.Query {
 	if ls.LudomanNickname != nil {
 		ls.where(query, Tables.Ludoman.Alias, Columns.Ludoman.LudomanNickname, ls.LudomanNickname)
 	}
+	if ls.TgID != nil {
+		ls.where(query, Tables.Ludoman.Alias, Columns.Ludoman.TgID, ls.TgID)
+	}
 	if ls.Balance != nil {
 		ls.where(query, Tables.Ludoman.Alias, Columns.Ludoman.Balance, ls.Balance)
 	}
 	if ls.Losses != nil {
 		ls.where(query, Tables.Ludoman.Alias, Columns.Ludoman.Losses, ls.Losses)
+	}
+	if ls.TotalLost != nil {
+		ls.where(query, Tables.Ludoman.Alias, Columns.Ludoman.TotalLost, ls.TotalLost)
+	}
+	if ls.TotalWon != nil {
+		ls.where(query, Tables.Ludoman.Alias, Columns.Ludoman.TotalWon, ls.TotalWon)
 	}
 	if len(ls.IDs) > 0 {
 		Filter{Columns.Ludoman.ID, ls.IDs, SearchTypeArray, false}.Apply(query)

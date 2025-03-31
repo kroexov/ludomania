@@ -6,16 +6,19 @@ package db
 
 var Columns = struct {
 	Ludoman struct {
-		ID, LudomanNickname, Balance, Losses string
+		ID, LudomanNickname, TgID, Balance, Losses, TotalLost, TotalWon string
 	}
 }{
 	Ludoman: struct {
-		ID, LudomanNickname, Balance, Losses string
+		ID, LudomanNickname, TgID, Balance, Losses, TotalLost, TotalWon string
 	}{
 		ID:              "ludomanId",
 		LudomanNickname: "ludomanNickname",
+		TgID:            "tgId",
 		Balance:         "balance",
 		Losses:          "losses",
+		TotalLost:       "totalLost",
+		TotalWon:        "totalWon",
 	},
 }
 
@@ -37,6 +40,9 @@ type Ludoman struct {
 
 	ID              int    `pg:"ludomanId,pk"`
 	LudomanNickname string `pg:"ludomanNickname,use_zero"`
-	Balance         int    `pg:"balance,use_zero"`
-	Losses          int    `pg:"losses,use_zero"`
+	TgID            int64  `pg:"tgId,use_zero"`
+	Balance         int64  `pg:"balance,use_zero"`
+	Losses          int64  `pg:"losses,use_zero"`
+	TotalLost       *int64 `pg:"totalLost"`
+	TotalWon        *int64 `pg:"totalWon"`
 }
