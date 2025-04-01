@@ -22,13 +22,13 @@ import (
 )
 
 const (
-	patternPapikSlots         = "papikSlots"
-	patternMayatinRoulette    = "mayatinRoulette"
-	patternMayatinRouletteBet = "mayatinBet"
-	patternPovyshevExams      = "povyshevExams"
-	patternBuyBack            = "buyback"
-	playersRating             = "rating"
-
+	patternPapikSlots          = "papikSlots"
+	patternMayatinRoulette     = "mayatinRoulette"
+	patternMayatinRouletteBet  = "mayatinBet"
+	patternPovyshevExams       = "povyshevExams"
+	patternBuyBack             = "buyback"
+	playersRating              = "rating"
+	initialBalance             = 1000000
 	patternMayatinRouletteBetN = "_n"
 	patternMayatinRouletteBetP = "_p"
 	patternMayatinRouletteBetB = "_b"
@@ -124,6 +124,7 @@ func (bs *BotService) DefaultHandler(ctx context.Context, b *bot.Bot, update *mo
 
 func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update *models.Update) error {
 	username := update.InlineQuery.From.Username
+	tgID := int(update.InlineQuery.From.ID)
 	user, err := bs.cr.OneLudoman(ctx, &db.LudomanSearch{LudomanNickname: &username})
 	if err != nil {
 		return err
@@ -131,7 +132,8 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 	if user == nil {
 		newUser, err := bs.cr.AddLudoman(ctx, &db.Ludoman{
 			LudomanNickname: username,
-			Balance:         1000000,
+			Balance:         initialBalance,
+			TgID:            tgID,
 		})
 		if err != nil {
 			return err
@@ -302,7 +304,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 		return
 	}
 
-	if int(user.Balance) < 100000*koef {
+	if user.Balance < 100000*koef {
 		if user.Balance < 100000 {
 			bs.lossHandler(ctx, b, update, parts[1])
 			return
@@ -339,14 +341,14 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 			bs.Errorf("%v", err)
 			return
 		}
-		res = fmt.Sprintf("@%s, Победа! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 500000*koef), p.Sprintf("%d", int(user.Balance)+400000*koef))
+		res = fmt.Sprintf("@%s, Победа! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 500000*koef), p.Sprintf("%d", user.Balance+400000*koef))
 	default:
 		err = bs.updateBalance(-100000*koef, []int{user.ID})
 		if err != nil {
 			bs.Errorf("%v", err)
 			return
 		}
-		res = fmt.Sprintf("@%s, Неудача! Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", int(user.Balance)-100000*koef))
+		res = fmt.Sprintf("@%s, Неудача! Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", user.Balance-100000*koef))
 	}
 
 	pic := slotsResults[num]
@@ -357,7 +359,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 			bs.Errorf("%v", err)
 			return
 		}
-		res = fmt.Sprintf("@%s, ГИГАДЖЕКПОТ! С прошедшим 125-м днём рождения нашего любимого ВУЗа!\nВы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 100000000*koef), p.Sprintf("%d", 100000000*koef+int(user.Balance)))
+		res = fmt.Sprintf("@%s, ГИГАДЖЕКПОТ! С прошедшим 125-м днём рождения нашего любимого ВУЗа!\nВы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 100000000*koef), p.Sprintf("%d", 100000000*koef+user.Balance))
 		pic = jackPotITMO
 	}
 
@@ -367,7 +369,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 			bs.Errorf("%v", err)
 			return
 		}
-		res = fmt.Sprintf("@%s, ДЖЕКПОТ! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 10000000*koef), p.Sprintf("%d", 10000000*koef+int(user.Balance)))
+		res = fmt.Sprintf("@%s, ДЖЕКПОТ! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 10000000*koef), p.Sprintf("%d", 10000000*koef+user.Balance))
 		pic = jackPotPapikyan
 	}
 
@@ -491,7 +493,7 @@ func (bs *BotService) PlayersRatingHandler(ctx context.Context, b *bot.Bot, upda
 		"add": func(a, b int) int {
 			return a + b
 		},
-		"formatDigit": func(in int64) string {
+		"formatDigit": func(in int) string {
 			return p.Sprintf("%d", in)
 		},
 	}
@@ -555,9 +557,13 @@ func (bs *BotService) BuyBackHandler(ctx context.Context, b *bot.Bot, update *mo
 		return
 	}
 
-	user.Balance = 1000000
+	user.Balance = initialBalance
+	if user.ID == 0 {
+		user.TgID = int(update.CallbackQuery.From.ID)
+	}
+
 	user.Losses += 1
-	_, err = bs.cr.UpdateLudoman(ctx, user, db.WithColumns(db.Columns.Ludoman.Balance, db.Columns.Ludoman.Losses))
+	_, err = bs.cr.UpdateLudoman(ctx, user, db.WithColumns(db.Columns.Ludoman.Balance, db.Columns.Ludoman.Losses, db.Columns.Ludoman.TgID))
 	if err != nil {
 		bs.Errorf("%v", err)
 		return
@@ -567,7 +573,7 @@ func (bs *BotService) BuyBackHandler(ctx context.Context, b *bot.Bot, update *mo
 		InlineMessageID: update.CallbackQuery.InlineMessageID,
 		Media: &models.InputMediaPhoto{
 			Media:     "https://i.ibb.co/6R0Cz78Q/image-4.jpg",
-			Caption:   fmt.Sprintf("Вы откупились! Счетчик ваших проданных квартир: %d\nНажмите на название бота и проиграйте всё снова, или может быть сегодня вам повезет попасть в топ рейтинга?)\n\np.s. поставьте звездочку в гитхабе 👉👈 https://github.com/kroexov/gradeBot/tree/ludomania", user.Losses),
+			Caption:   fmt.Sprintf("Вы откупились! Счетчик ваших проданных квартир: %d\nНажмите на название бота и проиграйте всё снова, или может быть сегодня вам повезет попасть в топ рейтинга?)\n\np.s. поставьте звездочку в гитхабе 👉👈 https://github.com/kroexov/ludomania", user.Losses),
 			ParseMode: models.ParseModeHTML,
 			//HasSpoiler: true,
 		},
