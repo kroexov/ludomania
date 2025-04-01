@@ -9,6 +9,7 @@ ApplicationName = "apisrv"
 [Server]
 Host      = "test.example"
 Port      = 8078
+IsDevel   = true
 
 [Bot]
 Token = ""
