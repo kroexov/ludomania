@@ -302,7 +302,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 		return
 	}
 
-	if int(user.Balance) < 100000*koef {
+	if user.Balance < 100000*koef {
 		if user.Balance < 100000 {
 			bs.lossHandler(ctx, b, update, parts[1])
 			return
@@ -339,14 +339,14 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 			bs.Errorf("%v", err)
 			return
 		}
-		res = fmt.Sprintf("@%s, Победа! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 500000*koef), p.Sprintf("%d", int(user.Balance)+400000*koef))
+		res = fmt.Sprintf("@%s, Победа! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 500000*koef), p.Sprintf("%d", user.Balance+400000*koef))
 	default:
 		err = bs.updateBalance(-100000*koef, []int{user.ID})
 		if err != nil {
 			bs.Errorf("%v", err)
 			return
 		}
-		res = fmt.Sprintf("@%s, Неудача! Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", int(user.Balance)-100000*koef))
+		res = fmt.Sprintf("@%s, Неудача! Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", user.Balance-100000*koef))
 	}
 
 	pic := slotsResults[num]
@@ -357,7 +357,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 			bs.Errorf("%v", err)
 			return
 		}
-		res = fmt.Sprintf("@%s, ГИГАДЖЕКПОТ! С прошедшим 125-м днём рождения нашего любимого ВУЗа!\nВы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 100000000*koef), p.Sprintf("%d", 100000000*koef+int(user.Balance)))
+		res = fmt.Sprintf("@%s, ГИГАДЖЕКПОТ! С прошедшим 125-м днём рождения нашего любимого ВУЗа!\nВы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 100000000*koef), p.Sprintf("%d", 100000000*koef+user.Balance))
 		pic = jackPotITMO
 	}
 
@@ -367,7 +367,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 			bs.Errorf("%v", err)
 			return
 		}
-		res = fmt.Sprintf("@%s, ДЖЕКПОТ! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 10000000*koef), p.Sprintf("%d", 10000000*koef+int(user.Balance)))
+		res = fmt.Sprintf("@%s, ДЖЕКПОТ! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 10000000*koef), p.Sprintf("%d", 10000000*koef+user.Balance))
 		pic = jackPotPapikyan
 	}
 
