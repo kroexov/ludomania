@@ -22,13 +22,14 @@ import (
 )
 
 const (
-	patternPapikSlots         = "papikSlots"
-	patternMayatinRoulette    = "mayatinRoulette"
-	patternMayatinRouletteBet = "mayatinBet"
-	patternPovyshevExams      = "povyshevExams"
-	patternBuyBack            = "buyback"
-	playersRating             = "rating"
-
+	patternPapikSlots          = "papikSlots"
+	patternMayatinRoulette     = "mayatinRoulette"
+	patternMayatinRouletteBet  = "mayatinBet"
+	patternPovyshevExams       = "povyshevExams"
+	patternBuyBack             = "buyback"
+	playersRating              = "rating"
+	patternBuyBackHouse        = "BuyBackHouse"
+	initialBalance             = 1000000
 	patternMayatinRouletteBetN = "_n"
 	patternMayatinRouletteBetP = "_p"
 	patternMayatinRouletteBetB = "_b"
@@ -103,6 +104,7 @@ func (bs *BotService) RegisterBotHandlers(b *bot.Bot) {
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternMayatinRouletteBet, bot.MatchTypePrefix, bs.MayatinRouletteBetHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, playersRating, bot.MatchTypePrefix, bs.PlayersRatingHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternBuyBack, bot.MatchTypePrefix, bs.BuyBackHandler)
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternBuyBackHouse, bot.MatchTypePrefix, bs.BuybackHouseHandler)
 }
 
 func (bs *BotService) DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -124,6 +126,7 @@ func (bs *BotService) DefaultHandler(ctx context.Context, b *bot.Bot, update *mo
 
 func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update *models.Update) error {
 	username := update.InlineQuery.From.Username
+	tgID := int(update.InlineQuery.From.ID)
 	user, err := bs.cr.OneLudoman(ctx, &db.LudomanSearch{LudomanNickname: &username})
 	if err != nil {
 		return err
@@ -131,7 +134,8 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 	if user == nil {
 		newUser, err := bs.cr.AddLudoman(ctx, &db.Ludoman{
 			LudomanNickname: username,
-			Balance:         1000000,
+			Balance:         initialBalance,
+			TgID:            tgID,
 		})
 		if err != nil {
 			return err
@@ -239,6 +243,15 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 					ID:           "5",
 					Title:        "Особые опции 🤭",
 					ThumbnailURL: "https://linda.nyc3.cdn.digitaloceanspaces.com/370_npd_webp-o_18/sticker-fan_11513288_o.webp",
+					ReplyMarkup: models.InlineKeyboardMarkup{
+						InlineKeyboard: [][]models.InlineKeyboardButton{
+							{
+								models.InlineKeyboardButton{
+									Text:         "Выкупить квартиру 2М",
+									CallbackData: patternBuyBackHouse + "_" + strconv.Itoa(user.ID),
+								},
+							},
+						}},
 					InputMessageContent: &models.InputTextMessageContent{
 						MessageText: fmt.Sprintf("🤭🤭🤭🤭🤭🤭🤭"),
 					}},
@@ -469,6 +482,62 @@ func (bs *BotService) lossHandler(ctx context.Context, b *bot.Bot, update *model
 	})
 }
 
+func (bs *BotService) BuybackHouseHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	parts := strings.Split(update.CallbackQuery.Data, "_")
+	if len(parts) < 2 {
+		bs.Errorf("invalid callback data: %s", update.CallbackQuery.Data)
+		return
+	}
+
+	userID, err := strconv.Atoi(parts[1])
+	if err != nil {
+		bs.Errorf("invalid user id: %v", err)
+		return
+	}
+
+	user, err := bs.cr.LudomanByID(ctx, userID)
+	if err != nil {
+		bs.Errorf("failed to get user: %v", err)
+		return
+	}
+
+	if user.LudomanNickname != update.CallbackQuery.From.Username {
+		bs.respondToCallback(ctx, b, update.CallbackQuery.ID, "Это не ваше окно выкупа квартиры !")
+		return
+	}
+
+	if user.Balance < 2000000 {
+		bs.respondToCallback(ctx, b, update.CallbackQuery.ID, "Недостаточно i$ coins для выкупа квартиры обртано :(")
+		return
+	}
+
+	if user.Losses <= 0 {
+		bs.respondToCallback(ctx, b, update.CallbackQuery.ID, "Вам нечего выкупать, пора сыграть в i$ казик")
+		return
+	}
+
+	user.Balance = user.Balance - 2000000
+	user.Losses = user.Losses - 1
+	_, err = bs.cr.UpdateLudoman(ctx, user, db.WithColumns(db.Columns.Ludoman.Balance, db.Columns.Ludoman.Losses))
+	if err != nil {
+		bs.Errorf("failed to update user: %v", err)
+		return
+	}
+
+	bs.respondToCallback(ctx, b, update.CallbackQuery.ID, "Вы успешно выкупили квартиру обрартно!")
+}
+
+func (bs *BotService) respondToCallback(ctx context.Context, b *bot.Bot, callbackID, text string) {
+	_, err := b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+		CallbackQueryID: callbackID,
+		Text:            text,
+		ShowAlert:       true,
+	})
+	if err != nil {
+		bs.Errorf("failed to answer callback query: %v", err)
+	}
+}
+
 func (bs *BotService) PlayersRatingHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	players, err := bs.cr.LudomenByFilters(ctx, &db.LudomanSearch{}, db.Pager{PageSize: 10}, db.WithSort(db.NewSortField(db.Columns.Ludoman.Balance, true), db.NewSortField(db.Columns.Ludoman.Losses, false)))
 	if err != nil {
@@ -555,9 +624,13 @@ func (bs *BotService) BuyBackHandler(ctx context.Context, b *bot.Bot, update *mo
 		return
 	}
 
-	user.Balance = 1000000
+	user.Balance = initialBalance
+	if user.ID == 0 {
+		user.TgID = int(update.CallbackQuery.From.ID)
+	}
+
 	user.Losses += 1
-	_, err = bs.cr.UpdateLudoman(ctx, user, db.WithColumns(db.Columns.Ludoman.Balance, db.Columns.Ludoman.Losses))
+	_, err = bs.cr.UpdateLudoman(ctx, user, db.WithColumns(db.Columns.Ludoman.Balance, db.Columns.Ludoman.Losses, db.Columns.Ludoman.TgID))
 	if err != nil {
 		bs.Errorf("%v", err)
 		return
@@ -567,7 +640,7 @@ func (bs *BotService) BuyBackHandler(ctx context.Context, b *bot.Bot, update *mo
 		InlineMessageID: update.CallbackQuery.InlineMessageID,
 		Media: &models.InputMediaPhoto{
 			Media:     "https://i.ibb.co/6R0Cz78Q/image-4.jpg",
-			Caption:   fmt.Sprintf("Вы откупились! Счетчик ваших проданных квартир: %d\nНажмите на название бота и проиграйте всё снова, или может быть сегодня вам повезет попасть в топ рейтинга?)\n\np.s. поставьте звездочку в гитхабе 👉👈 https://github.com/kroexov/gradeBot/tree/ludomania", user.Losses),
+			Caption:   fmt.Sprintf("Вы откупились! Счетчик ваших проданных квартир: %d\nНажмите на название бота и проиграйте всё снова, или может быть сегодня вам повезет попасть в топ рейтинга?)\n\np.s. поставьте звездочку в гитхабе 👉👈 https://github.com/kroexov/ludomania", user.Losses),
 			ParseMode: models.ParseModeHTML,
 			//HasSpoiler: true,
 		},
@@ -838,9 +911,18 @@ func intKeys(in map[int]struct{}) []int {
 }
 
 func (bs *BotService) updateBalance(sum int, ids []int) error {
-	if len(ids) > 0 {
-		_, err := bs.db.Exec(`update ludomans set balance = balance + ? where "ludomanId" in (?)`, sum, pg.In(ids))
-		return err
+	if len(ids) == 0 {
+		return nil
 	}
-	return nil
+
+	var query string
+	//NULL = 0
+	if sum > 0 {
+		query = `update ludomans set balance = balance + ?, "totalWon" = COALESCE("totalWon", 0) + ? where "ludomanId" in (?)`
+	} else {
+		query = `update ludomans set balance = balance + ?, "totalLost" = COALESCE("totalLost", 0) + ABS(?) where "ludomanId" in (?)`
+	}
+
+	_, err := bs.db.Exec(query, sum, sum, pg.In(ids))
+	return err
 }
