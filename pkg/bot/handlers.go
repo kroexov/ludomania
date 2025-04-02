@@ -844,9 +844,17 @@ func intKeys(in map[int]struct{}) []int {
 }
 
 func (bs *BotService) updateBalance(sum int, ids []int) error {
-	if len(ids) > 0 {
-		_, err := bs.db.Exec(`update ludomans set balance = balance + ? where "ludomanId" in (?)`, sum, pg.In(ids))
-		return err
+	if len(ids) == 0 {
+		return nil
 	}
-	return nil
+
+	var query string
+	if sum > 0 {
+		query = `update ludomans set balance = balance + ?, "totalWon" = "totalWon" + ? where "ludomanId" in (?)`
+	} else {
+		query = `update ludomans set balance = balance + ?, "totalLost" = "totalLost" - ? where "ludomanId" in (?)`
+	}
+
+	_, err := bs.db.Exec(query, sum, sum, pg.In(ids))
+	return err
 }
