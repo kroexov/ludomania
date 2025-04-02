@@ -849,6 +849,7 @@ func (bs *BotService) updateBalance(sum int, ids []int) error {
 	}
 
 	var query string
+	//NULL = 0
 	if sum > 0 {
 		query = `update ludomans set balance = balance + ?, "totalWon" = COALESCE("totalWon", 0) + ? where "ludomanId" in (?)`
 	} else {
