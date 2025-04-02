@@ -850,9 +850,9 @@ func (bs *BotService) updateBalance(sum int, ids []int) error {
 
 	var query string
 	if sum > 0 {
-		query = `update ludomans set balance = balance + ?, "totalWon" = "totalWon" + ? where "ludomanId" in (?)`
+		query = `update ludomans set balance = balance + ?, "totalWon" = COALESCE("totalWon", 0) + ? where "ludomanId" in (?)`
 	} else {
-		query = `update ludomans set balance = balance + ?, "totalLost" = "totalLost" - ? where "ludomanId" in (?)`
+		query = `update ludomans set balance = balance + ?, "totalLost" = COALESCE("totalLost", 0) + ABS(?) where "ludomanId" in (?)`
 	}
 
 	_, err := bs.db.Exec(query, sum, sum, pg.In(ids))
