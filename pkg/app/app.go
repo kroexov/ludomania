@@ -19,8 +19,9 @@ import (
 type Config struct {
 	Database *pg.Options
 	Server   struct {
-		Host string
-		Port int
+		Host    string
+		Port    int
+		IsDevel bool
 	}
 	Bot struct {
 		Token string
@@ -34,6 +35,7 @@ type App struct {
 	db      db.DB
 	b       *bot.Bot
 	dbc     *pg.DB
+	isDevel bool
 
 	bs *botService.BotService
 }
