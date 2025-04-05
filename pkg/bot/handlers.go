@@ -507,7 +507,7 @@ func (bs *BotService) BuybackHouseHandler(ctx context.Context, b *bot.Bot, updat
 	}
 
 	if user.Balance < 2000000 {
-		bs.respondToCallback(ctx, b, update.CallbackQuery.ID, "Недостаточно i$ coins для выкупа квартиры обртано :(")
+		bs.respondToCallback(ctx, b, update.CallbackQuery.ID, "Недостаточно i$ coins для выкупа квартиры обратно :(")
 		return
 	}
 
