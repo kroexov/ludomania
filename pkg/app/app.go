@@ -37,6 +37,7 @@ type App struct {
 	dbc     *pg.DB
 	isDevel bool
 
+
 	bs *botService.BotService
 }
 
@@ -67,11 +68,17 @@ func New(appName string, verbose bool, cfg Config, db db.DB, dbc *pg.DB) *App {
 func (a *App) Run() error {
 	a.bs.RegisterBotHandlers(a.b)
 
+	a.bs.RegisterBotHandlers(a.b)
+
 	// for local usage
 	if a.isDevel {
 		go a.b.Start(context.TODO())
 		return nil
 	}
+
+
+	// for server usage
+
 
 	// for server usage
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
