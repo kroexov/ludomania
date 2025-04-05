@@ -36,6 +36,7 @@ type App struct {
 	b       *bot.Bot
 	dbc     *pg.DB
 	isDevel bool
+	
 
 	bs *botService.BotService
 }
@@ -46,6 +47,7 @@ func New(appName string, verbose bool, cfg Config, db db.DB, dbc *pg.DB) *App {
 		cfg:     cfg,
 		db:      db,
 		dbc:     dbc,
+		isDevel: cfg.Server.IsDevel,
 	}
 
 	a.SetStdLoggers(verbose)
