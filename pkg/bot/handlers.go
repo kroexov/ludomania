@@ -491,7 +491,7 @@ func (bs *BotService) PlayersRatingHandler(ctx context.Context, b *bot.Bot, upda
 		"add": func(a, b int) int {
 			return a + b
 		},
-		"formatDigit": func(in int) string {
+		"formatDigit": func(in int64) string {
 			return p.Sprintf("%d", in)
 		},
 	}
