@@ -516,7 +516,7 @@ func (bs *BotService) BuybackHouseHandler(ctx context.Context, b *bot.Bot, updat
 		return
 	}
 
-	user.Balance = user.Balance - 2000000
+	bs.updateBalance(-2000000, []int{user.ID})
 	user.Losses = user.Losses - 1
 	_, err = bs.cr.UpdateLudoman(ctx, user, db.WithColumns(db.Columns.Ludoman.Balance, db.Columns.Ludoman.Losses))
 	if err != nil {
@@ -524,7 +524,7 @@ func (bs *BotService) BuybackHouseHandler(ctx context.Context, b *bot.Bot, updat
 		return
 	}
 
-	bs.respondToCallback(ctx, b, update.CallbackQuery.ID, "Вы успешно выкупили квартиру обрартно!")
+	bs.respondToCallback(ctx, b, update.CallbackQuery.ID, fmt.Sprintf("Вы успешно выкупили квартиру обратно!\nКоличество проданных квартир: %d", user.Losses))
 }
 
 func (bs *BotService) respondToCallback(ctx context.Context, b *bot.Bot, callbackID, text string) {
