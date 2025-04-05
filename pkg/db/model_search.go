@@ -55,11 +55,11 @@ type LudomanSearch struct {
 
 	ID                   *int
 	LudomanNickname      *string
-	TgID                 *int64
-	Balance              *int64
-	Losses               *int64
-	TotalLost            *int64
-	TotalWon             *int64
+	TgID                 *int
+	Balance              *int
+	Losses               *int
+	TotalLost            *int
+	TotalWon             *int
 	IDs                  []int
 	LudomanNicknameILike *string
 }
