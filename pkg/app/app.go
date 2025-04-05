@@ -65,14 +65,18 @@ func New(appName string, verbose bool, cfg Config, db db.DB, dbc *pg.DB) *App {
 // Run is a function that runs application.
 func (a *App) Run() error {
 
+	a.bs.RegisterBotHandlers(a.b)
+
 	// for local usage
-	//a.bs.RegisterBotHandlers(a.b)
-	//go a.b.Start(context.TODO())
-	//return nil
+	if a.isDevel {
+		go a.b.Start(context.TODO())
+		return nil
+	}
+
+	// for server usage
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
-	a.bs.RegisterBotHandlers(a.b)
 	_, err := a.b.SetWebhook(ctx, &bot.SetWebhookParams{
 		URL: fmt.Sprintf("https://%s/isl/", a.cfg.Server.Host),
 	})
