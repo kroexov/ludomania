@@ -37,6 +37,7 @@ type App struct {
 	dbc     *pg.DB
 	isDevel bool
 
+
 	bs *botService.BotService
 }
 
@@ -65,6 +66,7 @@ func New(appName string, verbose bool, cfg Config, db db.DB, dbc *pg.DB) *App {
 
 // Run is a function that runs application.
 func (a *App) Run() error {
+
 	a.bs.RegisterBotHandlers(a.b)
 
 	// for local usage
@@ -74,6 +76,7 @@ func (a *App) Run() error {
 	}
 
 	// for server usage
+	
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 	_, err := a.b.SetWebhook(ctx, &bot.SetWebhookParams{
