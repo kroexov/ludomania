@@ -36,7 +36,7 @@ type App struct {
 	b       *bot.Bot
 	dbc     *pg.DB
 	isDevel bool
-	
+
 
 	bs *botService.BotService
 }
@@ -76,7 +76,7 @@ func (a *App) Run() error {
 	}
 
 	// for server usage
-
+	
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 	_, err := a.b.SetWebhook(ctx, &bot.SetWebhookParams{
