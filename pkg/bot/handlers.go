@@ -863,18 +863,19 @@ func (bs *BotService) updateBalance(sum int, ids []int) error {
 		return nil
 	}
 	query := `
-		UPDATE ludomans
-		SET balance = balance + ?,
-			"totalWon" = CASE 
-				WHEN ? > 0 THEN COALESCE("totalWon", 0) + ? 
-				ELSE "totalWon"
-			END,
-			"totalLost" = CASE 
-				WHEN ? <= 0 THEN COALESCE("totalLost", 0) + ABS(?)
-				ELSE "totalLost"
-			END
-		WHERE "ludomanId" in (?)
-	`
-	_, err := bs.db.Exec(query, sum, sum, sum, sum, sum, pg.In(ids))
+    UPDATE ludomans
+    SET balance = balance + ?0,
+      "totalWon" = CASE 
+        WHEN ?0 > 0 THEN COALESCE("totalWon", 0) + ?0 
+        ELSE "totalWon"
+      END,
+      "totalLost" = CASE 
+        WHEN ?0 <= 0 THEN COALESCE("totalLost", 0) + ABS(?0)
+        ELSE "totalLost"
+      END
+    WHERE "ludomanId" in (?1)
+  `
+
+	_, err := bs.db.Exec(query, sum, pg.In(ids))
 	return err
 }
