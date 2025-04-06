@@ -517,8 +517,12 @@ func (bs *BotService) BuybackHouseHandler(ctx context.Context, b *bot.Bot, updat
 	}
 
 	bs.updateBalance(-2000000, []int{user.ID})
+	if err != nil {
+		bs.Errorf("%v", err)
+		return
+	}
 	user.Losses = user.Losses - 1
-	_, err = bs.cr.UpdateLudoman(ctx, user, db.WithColumns(db.Columns.Ludoman.Balance, db.Columns.Ludoman.Losses))
+	_, err = bs.cr.UpdateLudoman(ctx, user, db.WithColumns(db.Columns.Ludoman.Losses))
 	if err != nil {
 		bs.Errorf("failed to update user: %v", err)
 		return
@@ -537,7 +541,6 @@ func (bs *BotService) respondToCallback(ctx context.Context, b *bot.Bot, callbac
 		bs.Errorf("failed to answer callback query: %v", err)
 	}
 }
-
 func (bs *BotService) PlayersRatingHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	topWins, err := bs.cr.LudomenByFilters(
 		ctx,
@@ -560,14 +563,17 @@ func (bs *BotService) PlayersRatingHandler(ctx context.Context, b *bot.Bot, upda
 		return
 	}
 
-	winsTemplate := `{{- range $index, $ludoman := . }}
-{{- printf "\n%d. Никнейм: @%s, Выиграно: %s,\n Квартир продано: %d" (add $index 1) $ludoman.LudomanNickname (formatDigit $ludoman.TotalWon) $ludoman.Losses}}
-{{- end }}
-`
-	lossesTemplate := `{{- range $index, $ludoman := . }}
-{{- printf "\n%d. Никнейм: @%s, Проиграно: %s,\n Квартир продано: %d" (add $index 1) $ludoman.LudomanNickname (formatDigit $ludoman.TotalLost) $ludoman.Losses}}
-{{- end }}
-`
+	topBalance, err := bs.cr.LudomenByFilters(
+		ctx,
+		&db.LudomanSearch{},
+		db.Pager{PageSize: 10},
+		db.WithSort(db.NewSortField(db.Columns.Ludoman.Balance, true)),
+	)
+	if err != nil {
+		bs.Errorf("%v", err)
+		return
+	}
+
 	// Функция для добавления 1 к индексу (так как индексация с 0)
 	funcMap := template.FuncMap{
 		"add": func(a, b int) int {
@@ -577,6 +583,22 @@ func (bs *BotService) PlayersRatingHandler(ctx context.Context, b *bot.Bot, upda
 			return p.Sprintf("%d", in)
 		},
 	}
+
+	winsTemplate := `{{- range $index, $ludoman := . }}
+{{- printf "\n%d. Никнейм: @%s, Выиграно: %s, Квартир продано: %d" (add $index 1) $ludoman.LudomanNickname (formatDigit $ludoman.TotalWon) $ludoman.Losses}}
+{{- end }}`
+
+	lossesTemplate := `{{- range $index, $ludoman := . }}
+{{- printf "\n%d. Никнейм: @%s, Проиграно: %s, Квартир продано: %d" (add $index 1) $ludoman.LudomanNickname (formatDigit $ludoman.TotalLost) $ludoman.Losses}}
+{{- end }}`
+
+	balanceTemplate := `{{- range $index, $ludoman := . }}
+{{- printf "\n%d. Никнейм: @%s, Баланс: %s, Квартир продано: %d" (add $index 1) $ludoman.LudomanNickname (formatDigit $ludoman.Balance) $ludoman.Losses}}
+{{- end }}`
+
+	var bufWins bytes.Buffer
+	var bufLosses bytes.Buffer
+	var bufBalance bytes.Buffer
 
 	tmplWins, err := template.New("winsList").Funcs(funcMap).Parse(winsTemplate)
 	if err != nil {
@@ -588,9 +610,11 @@ func (bs *BotService) PlayersRatingHandler(ctx context.Context, b *bot.Bot, upda
 		bs.Errorf("%v", err)
 		return
 	}
-
-	var bufWins bytes.Buffer
-	var bufLosses bytes.Buffer
+	tmplBalance, err := template.New("balanceList").Funcs(funcMap).Parse(balanceTemplate)
+	if err != nil {
+		bs.Errorf("%v", err)
+		return
+	}
 
 	if err = tmplWins.Execute(&bufWins, topWins); err != nil {
 		bs.Errorf("%v", err)
@@ -600,11 +624,16 @@ func (bs *BotService) PlayersRatingHandler(ctx context.Context, b *bot.Bot, upda
 		bs.Errorf("%v", err)
 		return
 	}
+	if err = tmplBalance.Execute(&bufBalance, topBalance); err != nil {
+		bs.Errorf("%v", err)
+		return
+	}
 
 	_, err = b.EditMessageText(ctx, &bot.EditMessageTextParams{
 		InlineMessageID: update.CallbackQuery.InlineMessageID,
-		Text: "Список топ игроков по выигрышам:" + bufWins.String() +
-			"\n\nСписок топ игроков по проигрышам:" + bufLosses.String(),
+		Text: "Список топ игроков по суммарным выигрышам:" + bufWins.String() +
+			"\n\nСписок топ игроков по суммарным проигрышам:" + bufLosses.String() +
+			"\n\nСписок топ игроков по балансу:" + bufBalance.String(),
 	})
 	if err != nil {
 		bs.Errorf("%v", err)
@@ -930,6 +959,7 @@ func (bs *BotService) updateBalance(sum int, ids []int) error {
 	if len(ids) == 0 {
 		return nil
 	}
+	print(sum)
 	query := `
     UPDATE ludomans
     SET balance = balance + ?0,
