@@ -347,14 +347,14 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 	var res string
 	switch num {
 	case 0:
-		err = bs.updateBalance(400000*koef, []int{user.ID})
+		err = bs.updateBalance(400000*koef, []int{user.ID}, false)
 		if err != nil {
 			bs.Errorf("%v", err)
 			return
 		}
 		res = fmt.Sprintf("@%s, Победа! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 500000*koef), p.Sprintf("%d", user.Balance+400000*koef))
 	default:
-		err = bs.updateBalance(-100000*koef, []int{user.ID})
+		err = bs.updateBalance(-100000*koef, []int{user.ID}, false)
 		if err != nil {
 			bs.Errorf("%v", err)
 			return
@@ -365,7 +365,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 	pic := slotsResults[num]
 
 	if rand.Intn(667) == 666 {
-		err = bs.updateBalance(100000000*koef, []int{user.ID})
+		err = bs.updateBalance(100000000*koef, []int{user.ID}, false)
 		if err != nil {
 			bs.Errorf("%v", err)
 			return
@@ -375,7 +375,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 	}
 
 	if rand.Intn(112) == 111 {
-		err = bs.updateBalance(10000000*koef, []int{user.ID})
+		err = bs.updateBalance(10000000*koef, []int{user.ID}, false)
 		if err != nil {
 			bs.Errorf("%v", err)
 			return
@@ -516,9 +516,13 @@ func (bs *BotService) BuybackHouseHandler(ctx context.Context, b *bot.Bot, updat
 		return
 	}
 
-	bs.updateBalance(-2000000, []int{user.ID})
+	bs.updateBalance(-2000000, []int{user.ID}, true)
+	if err != nil {
+		bs.Errorf("%v", err)
+		return
+	}
 	user.Losses = user.Losses - 1
-	_, err = bs.cr.UpdateLudoman(ctx, user, db.WithColumns(db.Columns.Ludoman.Balance, db.Columns.Ludoman.Losses))
+	_, err = bs.cr.UpdateLudoman(ctx, user, db.WithColumns(db.Columns.Ludoman.Losses))
 	if err != nil {
 		bs.Errorf("failed to update user: %v", err)
 		return
@@ -537,24 +541,39 @@ func (bs *BotService) respondToCallback(ctx context.Context, b *bot.Bot, callbac
 		bs.Errorf("failed to answer callback query: %v", err)
 	}
 }
-
 func (bs *BotService) PlayersRatingHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
-	players, err := bs.cr.LudomenByFilters(ctx, &db.LudomanSearch{}, db.Pager{PageSize: 10}, db.WithSort(db.NewSortField(db.Columns.Ludoman.Balance, true), db.NewSortField(db.Columns.Ludoman.Losses, false)))
+	topWins, err := bs.cr.LudomenByFilters(
+		ctx,
+		&db.LudomanSearch{},
+		db.Pager{PageSize: 10},
+		db.WithSort(db.NewSortField(db.Columns.Ludoman.TotalWon, true)),
+	)
 	if err != nil {
 		bs.Errorf("%v", err)
 		return
 	}
-	ludomans, err := bs.cr.LudomenByFilters(ctx, &db.LudomanSearch{}, db.Pager{PageSize: 10}, db.WithSort(db.NewSortField(db.Columns.Ludoman.Losses, true)))
+	topLosses, err := bs.cr.LudomenByFilters(
+		ctx,
+		&db.LudomanSearch{},
+		db.Pager{PageSize: 10},
+		db.WithSort(db.NewSortField(db.Columns.Ludoman.TotalLost, true)),
+	)
 	if err != nil {
 		bs.Errorf("%v", err)
 		return
 	}
 
-	// Шаблон для вывода списка
-	listTemplate := `{{- range $index, $ludoman := . }}
-{{- printf "\n%d. Никнейм: @%s, Баланс: %s, Квартир продано: %d" (add $index 1) $ludoman.LudomanNickname (formatDigit $ludoman.Balance) $ludoman.Losses}}
-{{- end }}
-`
+	topBalance, err := bs.cr.LudomenByFilters(
+		ctx,
+		&db.LudomanSearch{},
+		db.Pager{PageSize: 10},
+		db.WithSort(db.NewSortField(db.Columns.Ludoman.Balance, true)),
+	)
+	if err != nil {
+		bs.Errorf("%v", err)
+		return
+	}
+
 	// Функция для добавления 1 к индексу (так как индексация с 0)
 	funcMap := template.FuncMap{
 		"add": func(a, b int) int {
@@ -565,30 +584,56 @@ func (bs *BotService) PlayersRatingHandler(ctx context.Context, b *bot.Bot, upda
 		},
 	}
 
-	// Создаем шаблон и парсим его
-	tmpl, err := template.New("list").Funcs(funcMap).Parse(listTemplate)
-	if err != nil {
-		bs.Errorf("%v", err)
-	}
+	winsTemplate := `{{- range $index, $ludoman := . }}
+{{- printf "\n%d. Никнейм: @%s, Выиграно: %s, Квартир продано: %d" (add $index 1) $ludoman.LudomanNickname (formatDigit $ludoman.TotalWon) $ludoman.Losses}}
+{{- end }}`
 
-	var buf bytes.Buffer
+	lossesTemplate := `{{- range $index, $ludoman := . }}
+{{- printf "\n%d. Никнейм: @%s, Проиграно: %s, Квартир продано: %d" (add $index 1) $ludoman.LudomanNickname (formatDigit $ludoman.TotalLost) $ludoman.Losses}}
+{{- end }}`
+
+	balanceTemplate := `{{- range $index, $ludoman := . }}
+{{- printf "\n%d. Никнейм: @%s, Баланс: %s, Квартир продано: %d" (add $index 1) $ludoman.LudomanNickname (formatDigit $ludoman.Balance) $ludoman.Losses}}
+{{- end }}`
+
+	var bufWins bytes.Buffer
 	var bufLosses bytes.Buffer
+	var bufBalance bytes.Buffer
 
-	// Выполняем шаблон и выводим результат
-	err = tmpl.Execute(&buf, players)
+	tmplWins, err := template.New("winsList").Funcs(funcMap).Parse(winsTemplate)
 	if err != nil {
 		bs.Errorf("%v", err)
+		return
+	}
+	tmplLosses, err := template.New("lossesList").Funcs(funcMap).Parse(lossesTemplate)
+	if err != nil {
+		bs.Errorf("%v", err)
+		return
+	}
+	tmplBalance, err := template.New("balanceList").Funcs(funcMap).Parse(balanceTemplate)
+	if err != nil {
+		bs.Errorf("%v", err)
+		return
 	}
 
-	// Выполняем шаблон и выводим результат
-	err = tmpl.Execute(&bufLosses, ludomans)
-	if err != nil {
+	if err = tmplWins.Execute(&bufWins, topWins); err != nil {
 		bs.Errorf("%v", err)
+		return
+	}
+	if err = tmplLosses.Execute(&bufLosses, topLosses); err != nil {
+		bs.Errorf("%v", err)
+		return
+	}
+	if err = tmplBalance.Execute(&bufBalance, topBalance); err != nil {
+		bs.Errorf("%v", err)
+		return
 	}
 
 	_, err = b.EditMessageText(ctx, &bot.EditMessageTextParams{
 		InlineMessageID: update.CallbackQuery.InlineMessageID,
-		Text:            "Список топ игроков:" + buf.String() + "\n\nСписок топ лудоманов:" + bufLosses.String(),
+		Text: "Список топ игроков по суммарным выигрышам:" + bufWins.String() +
+			"\n\nСписок топ игроков по суммарным проигрышам:" + bufLosses.String() +
+			"\n\nСписок топ игроков по балансу:" + bufBalance.String(),
 	})
 	if err != nil {
 		bs.Errorf("%v", err)
@@ -807,7 +852,7 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 		return true
 	})
 
-	err = bs.updateBalance(-500000, intKeys(bs.mayatinRouletteUsers))
+	err = bs.updateBalance(-500000, intKeys(bs.mayatinRouletteUsers), false)
 	if err != nil {
 		bs.Errorf("%v", err)
 		return
@@ -827,7 +872,7 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 		}
 		result += fmt.Sprintf("\nПобедителям начислено: %s", p.Sprintf("%d", cat.WinSum))
 
-		err = bs.updateBalance(cat.WinSum, db.Ludomans(winUsers).IDs())
+		err = bs.updateBalance(cat.WinSum, db.Ludomans(winUsers).IDs(), false)
 		if err != nil {
 			bs.Errorf("%v", err)
 			return
@@ -910,19 +955,25 @@ func intKeys(in map[int]struct{}) []int {
 	return out
 }
 
-func (bs *BotService) updateBalance(sum int, ids []int) error {
+func (bs *BotService) updateBalance(sum int, ids []int, balanceOnly bool) error {
 	if len(ids) == 0 {
 		return nil
 	}
 
-	var query string
-	//NULL = 0
-	if sum > 0 {
-		query = `update ludomans set balance = balance + ?, "totalWon" = COALESCE("totalWon", 0) + ? where "ludomanId" in (?)`
-	} else {
-		query = `update ludomans set balance = balance + ?, "totalLost" = COALESCE("totalLost", 0) + ABS(?) where "ludomanId" in (?)`
-	}
+	query := `
+	UPDATE ludomans
+	SET balance = balance + ?0,
+		"totalWon" = CASE
+	WHEN ?2 = False AND ?0 > 0 THEN COALESCE("totalWon", 0) + ?0
+	ELSE "totalWon"
+	END,
+		"totalLost" = CASE
+	WHEN ?2 = False AND ?0 <= 0 THEN COALESCE("totalLost", 0) + ABS(?0)
+	ELSE "totalLost"
+	END
+	WHERE "ludomanId" in (?1)
+	`
 
-	_, err := bs.db.Exec(query, sum, sum, pg.In(ids))
+	_, err := bs.db.Exec(query, sum, pg.In(ids), balanceOnly)
 	return err
 }
