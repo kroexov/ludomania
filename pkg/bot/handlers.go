@@ -347,14 +347,14 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 	var res string
 	switch num {
 	case 0:
-		err = bs.updateBalance(400000*koef, []int{user.ID})
+		err = bs.updateBalance(400000*koef, []int{user.ID}, false)
 		if err != nil {
 			bs.Errorf("%v", err)
 			return
 		}
 		res = fmt.Sprintf("@%s, Победа! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 500000*koef), p.Sprintf("%d", user.Balance+400000*koef))
 	default:
-		err = bs.updateBalance(-100000*koef, []int{user.ID})
+		err = bs.updateBalance(-100000*koef, []int{user.ID}, false)
 		if err != nil {
 			bs.Errorf("%v", err)
 			return
@@ -365,7 +365,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 	pic := slotsResults[num]
 
 	if rand.Intn(667) == 666 {
-		err = bs.updateBalance(100000000*koef, []int{user.ID})
+		err = bs.updateBalance(100000000*koef, []int{user.ID}, false)
 		if err != nil {
 			bs.Errorf("%v", err)
 			return
@@ -375,7 +375,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 	}
 
 	if rand.Intn(112) == 111 {
-		err = bs.updateBalance(10000000*koef, []int{user.ID})
+		err = bs.updateBalance(10000000*koef, []int{user.ID}, false)
 		if err != nil {
 			bs.Errorf("%v", err)
 			return
@@ -516,7 +516,7 @@ func (bs *BotService) BuybackHouseHandler(ctx context.Context, b *bot.Bot, updat
 		return
 	}
 
-	bs.updateBalance(-2000000, []int{user.ID})
+	bs.updateBalance(-2000000, []int{user.ID}, true)
 	if err != nil {
 		bs.Errorf("%v", err)
 		return
@@ -852,7 +852,7 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 		return true
 	})
 
-	err = bs.updateBalance(-500000, intKeys(bs.mayatinRouletteUsers))
+	err = bs.updateBalance(-500000, intKeys(bs.mayatinRouletteUsers), false)
 	if err != nil {
 		bs.Errorf("%v", err)
 		return
@@ -872,7 +872,7 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 		}
 		result += fmt.Sprintf("\nПобедителям начислено: %s", p.Sprintf("%d", cat.WinSum))
 
-		err = bs.updateBalance(cat.WinSum, db.Ludomans(winUsers).IDs())
+		err = bs.updateBalance(cat.WinSum, db.Ludomans(winUsers).IDs(), false)
 		if err != nil {
 			bs.Errorf("%v", err)
 			return
@@ -955,25 +955,25 @@ func intKeys(in map[int]struct{}) []int {
 	return out
 }
 
-func (bs *BotService) updateBalance(sum int, ids []int) error {
+func (bs *BotService) updateBalance(sum int, ids []int, balanceOnly bool) error {
 	if len(ids) == 0 {
 		return nil
 	}
-	print(sum)
-	query := `
-    UPDATE ludomans
-    SET balance = balance + ?0,
-      "totalWon" = CASE 
-        WHEN ?0 > 0 THEN COALESCE("totalWon", 0) + ?0 
-        ELSE "totalWon"
-      END,
-      "totalLost" = CASE 
-        WHEN ?0 <= 0 THEN COALESCE("totalLost", 0) + ABS(?0)
-        ELSE "totalLost"
-      END
-    WHERE "ludomanId" in (?1)
-  `
 
-	_, err := bs.db.Exec(query, sum, pg.In(ids))
+	query := `
+	UPDATE ludomans
+	SET balance = balance + ?0,
+		"totalWon" = CASE
+	WHEN ?2 = False AND ?0 > 0 THEN COALESCE("totalWon", 0) + ?0
+	ELSE "totalWon"
+	END,
+		"totalLost" = CASE
+	WHEN ?2 = False AND ?0 <= 0 THEN COALESCE("totalLost", 0) + ABS(?0)
+	ELSE "totalLost"
+	END
+	WHERE "ludomanId" in (?1)
+	`
+
+	_, err := bs.db.Exec(query, sum, pg.In(ids), balanceOnly)
 	return err
 }
