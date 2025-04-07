@@ -38,6 +38,8 @@ const (
 
 var p = message.NewPrinter(language.German)
 
+var limitByBack = 1
+
 var slotsResults = [7]string{
 	"https://i.ibb.co/1YqJpXwW/photo-2025-03-21-18-45-11.jpg",
 	"https://i.ibb.co/jPJ6TJ7Q/photo-2025-03-21-18-45-14.jpg",
@@ -92,6 +94,10 @@ type BotService struct {
 	mayatinCategoriesVotes  map[string]int
 
 	papikyanLock map[int]struct{}
+}
+
+func (bs *BotService) RegisterCron() {
+	go timerStarsCheck()
 }
 
 func NewBotService(logger embedlog.Logger, dbo db.DB) *BotService {
@@ -669,8 +675,13 @@ func (bs *BotService) BuyBackHandler(ctx context.Context, b *bot.Bot, update *mo
 		return
 	}
 
+	if user.Losses >= limitByBack {
+		bs.respondToCallback(ctx, b, update.CallbackQuery.ID, "Вы превысили лимит по проджам квартир. Чтобы повысить лимит, поставьте звездочку в гитхабе")
+		return
+	}
+
 	user.Balance = initialBalance
-	if user.ID == 0 {
+	if user.TgID == 0 {
 		user.TgID = int(update.CallbackQuery.From.ID)
 	}
 
@@ -685,7 +696,7 @@ func (bs *BotService) BuyBackHandler(ctx context.Context, b *bot.Bot, update *mo
 		InlineMessageID: update.CallbackQuery.InlineMessageID,
 		Media: &models.InputMediaPhoto{
 			Media:     "https://i.ibb.co/6R0Cz78Q/image-4.jpg",
-			Caption:   fmt.Sprintf("Вы откупились! Счетчик ваших проданных квартир: %d\nНажмите на название бота и проиграйте всё снова, или может быть сегодня вам повезет попасть в топ рейтинга?)\n\np.s. поставьте звездочку в гитхабе 👉👈 https://github.com/kroexov/ludomania", user.Losses),
+			Caption:   fmt.Sprintf("Вы откупились! Счетчик ваших проданных квартир: %d\nНажмите на название бота и проиграйте всё снова, или может быть сегодня вам повезет попасть в топ рейтинга?)\n\n ваш текущий лимит выкупов: %d / %d \n\nпоставьте звездочку в гитхабе 👉👈 https://github.com/kroexov/ludomania", user.Losses, user.Losses, limitByBack),
 			ParseMode: models.ParseModeHTML,
 			//HasSpoiler: true,
 		},
