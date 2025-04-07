@@ -37,7 +37,6 @@ type App struct {
 	dbc     *pg.DB
 	isDevel bool
 
-
 	bs *botService.BotService
 }
 
@@ -69,6 +68,8 @@ func (a *App) Run() error {
 
 	a.bs.RegisterBotHandlers(a.b)
 
+	a.bs.RegisterCron()
+
 	// for local usage
 	if a.isDevel {
 		go a.b.Start(context.TODO())
@@ -76,7 +77,7 @@ func (a *App) Run() error {
 	}
 
 	// for server usage
-	
+
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 	_, err := a.b.SetWebhook(ctx, &bot.SetWebhookParams{
