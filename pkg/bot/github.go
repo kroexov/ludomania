@@ -6,13 +6,15 @@ import (
 	"log"
 )
 
+const (
+	gitHubOwner    = "kroexov"
+	gitHubRepoName = "ludomania"
+)
+
 func getStarsCount() int {
 	client := github.NewClient(nil)
 	ctx := context.Background()
-	owner := "kroexov"
-	repoName := "ludomania"
-
-	repo, _, err := client.Repositories.Get(ctx, owner, repoName)
+	repo, _, err := client.Repositories.Get(ctx, gitHubOwner, gitHubRepoName)
 	if err != nil {
 		log.Fatal(err)
 	}

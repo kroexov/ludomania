@@ -1,57 +1,54 @@
 package bot
 
 import (
-	"github.com/robfig/cron/v3"
 	"log"
 	"time"
+
+	"github.com/robfig/cron/v3"
 )
 
-func timerStarsCheck() {
-	c := cron.New()
+type Cron struct {
+	scheduler *cron.Cron
+	bot       *BotService
+}
 
-	type cronJob struct {
-		schedule string
-		fn       func() error
+func NewCron(bot *BotService) *Cron {
+	return &Cron{
+		scheduler: cron.New(),
+		bot:       bot,
 	}
+}
 
-	jobs := map[string]cronJob{
-		"update.stars.limit": {
-			schedule: "*/1 * * * *",
-			fn: func() error {
-				stars := getStarsCount()
-				log.Printf("Получено количество звёзд: %d", stars)
-				if stars > limitByBack+10 {
-					limitByBack += 10
-					log.Printf("Новый лимит: %d", limitByBack)
-				}
-				return nil
-			},
-		},
+func (c *Cron) RegisterTask(name string, schedule string, taskFunc func() error) {
+	if schedule == "" {
+		schedule = DefaultSchedule
 	}
-
-	for name, job := range jobs {
-		if job.schedule == "" {
-			log.Printf("task=%v отключена конфигурацией", name)
-			continue
-		}
-
-		name := name
-
-		id, err := c.AddFunc(job.schedule, func() {
-			t0 := time.Now()
-			log.Printf("task=%v start running", name)
-			if err := job.fn(); err != nil {
-				log.Printf("task=%v run failed err=%v", name, err)
-			} else {
-				log.Printf("task=%v completed, duration=%v", name, time.Since(t0))
-			}
-		})
-		if err != nil {
-			log.Printf("task=%v failed to cron.AddFunc(), err=%v", name, err)
+	id, err := c.scheduler.AddFunc(schedule, func() {
+		t0 := time.Now()
+		log.Printf("task=%s started", name)
+		if err := taskFunc(); err != nil {
+			log.Printf("task=%s failed: %v", name, err)
 		} else {
-			log.Printf("task=%v next run=%v", name, c.Entry(id).Next)
+			log.Printf("task=%s completed, duration=%v", name, time.Since(t0))
 		}
+	})
+	if err != nil {
+		log.Printf("failed to register task %s: %v", name, err)
+		return
 	}
+	entry := c.scheduler.Entry(id)
+	log.Printf("task=%s registered, next run at %v", name, entry.Next)
+}
 
-	c.Start()
+func (c *Cron) Start() {
+	c.scheduler.Start()
+}
+
+func (c *Cron) StarsLimitTask() error {
+	stars := getStarsCount()
+	if stars > c.bot.limitByBack+10 {
+		newLimit := stars + 10
+		c.bot.SetLimitByBack(newLimit)
+	}
+	return nil
 }

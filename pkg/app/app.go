@@ -37,7 +37,26 @@ type App struct {
 	dbc     *pg.DB
 	isDevel bool
 
-	bs *botService.BotService
+	cronService *CronService
+	bs          *botService.BotService
+}
+
+type CronService struct {
+	cron *botService.Cron
+}
+
+func NewCronService(bs *botService.BotService) *CronService {
+	return &CronService{
+		cron: botService.NewCron(bs),
+	}
+}
+
+func (cs *CronService) RegisterTasks() {
+	cs.cron.RegisterTask("update.stars.limit", botService.DefaultSchedule, cs.cron.StarsLimitTask)
+}
+
+func (cs *CronService) Start() {
+	cs.cron.Start()
 }
 
 func New(appName string, verbose bool, cfg Config, db db.DB, dbc *pg.DB) *App {
@@ -68,7 +87,8 @@ func (a *App) Run() error {
 
 	a.bs.RegisterBotHandlers(a.b)
 
-	a.bs.RegisterCron()
+	a.cronService = NewCronService(a.bs)
+	a.cronService.RegisterTasks()
 
 	// for local usage
 	if a.isDevel {

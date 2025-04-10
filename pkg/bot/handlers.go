@@ -34,11 +34,10 @@ const (
 	patternMayatinRouletteBetP = "_p"
 	patternMayatinRouletteBetB = "_b"
 	patternMayatinRouletteBetU = "_u"
+	DefaultSchedule            = "*/1 * * * *"
 )
 
 var p = message.NewPrinter(language.German)
-
-var limitByBack = 1
 
 var slotsResults = [7]string{
 	"https://i.ibb.co/1YqJpXwW/photo-2025-03-21-18-45-11.jpg",
@@ -93,15 +92,23 @@ type BotService struct {
 	mayatinRouletteUsers    map[int]struct{}
 	mayatinCategoriesVotes  map[string]int
 
+	limitByBack  int
 	papikyanLock map[int]struct{}
 }
 
-func (bs *BotService) RegisterCron() {
-	go timerStarsCheck()
+func (bs *BotService) SetLimitByBack(newLimit int) {
+	bs.mu.Lock()
+	defer bs.mu.Unlock()
+	bs.limitByBack = newLimit
+	bs.Logger.Printf("New limit : %d", bs.limitByBack)
 }
-
+func (bs *BotService) RegisterCron() {
+	cronScheduler := NewCron(bs)
+	cronScheduler.RegisterTask("update.stars.limit", DefaultSchedule, cronScheduler.StarsLimitTask)
+	go cronScheduler.Start()
+}
 func NewBotService(logger embedlog.Logger, dbo db.DB) *BotService {
-	return &BotService{Logger: logger, db: dbo, cr: db.NewCommonRepo(dbo), mayatinRouletteBets: new(sync.Map), papikyanLock: make(map[int]struct{})}
+	return &BotService{Logger: logger, db: dbo, cr: db.NewCommonRepo(dbo), mayatinRouletteBets: new(sync.Map), papikyanLock: make(map[int]struct{}), limitByBack: 10}
 }
 
 func (bs *BotService) RegisterBotHandlers(b *bot.Bot) {
@@ -675,7 +682,7 @@ func (bs *BotService) BuyBackHandler(ctx context.Context, b *bot.Bot, update *mo
 		return
 	}
 
-	if user.Losses >= limitByBack {
+	if user.Losses >= bs.limitByBack {
 		bs.respondToCallback(ctx, b, update.CallbackQuery.ID, "Вы превысили лимит по проджам квартир. Чтобы повысить лимит, поставьте звездочку в гитхабе")
 		return
 	}
@@ -696,7 +703,7 @@ func (bs *BotService) BuyBackHandler(ctx context.Context, b *bot.Bot, update *mo
 		InlineMessageID: update.CallbackQuery.InlineMessageID,
 		Media: &models.InputMediaPhoto{
 			Media:     "https://i.ibb.co/6R0Cz78Q/image-4.jpg",
-			Caption:   fmt.Sprintf("Вы откупились! Счетчик ваших проданных квартир: %d\nНажмите на название бота и проиграйте всё снова, или может быть сегодня вам повезет попасть в топ рейтинга?)\n\n ваш текущий лимит выкупов: %d / %d \n\nпоставьте звездочку в гитхабе 👉👈 https://github.com/kroexov/ludomania", user.Losses, user.Losses, limitByBack),
+			Caption:   fmt.Sprintf("Вы откупились! Счетчик ваших проданных квартир: %d\nНажмите на название бота и проиграйте всё снова, или может быть сегодня вам повезет попасть в топ рейтинга?)\n\n ваш текущий лимит выкупов: %d / %d \n\n Чтобы увеличить лимит продаж квартир, поставьте звездочку в гитхабе 👉👈 https://github.com/kroexov/ludomania", user.Losses, user.Losses, bs.limitByBack),
 			ParseMode: models.ParseModeHTML,
 			//HasSpoiler: true,
 		},
