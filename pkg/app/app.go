@@ -9,11 +9,18 @@ import (
 	"time"
 
 	botService "gradebot/pkg/bot"
+	cronService "gradebot/pkg/bot"
+	githubService "gradebot/pkg/bot"
 	"gradebot/pkg/db"
 	"gradebot/pkg/embedlog"
 
 	"github.com/go-pg/pg/v10"
 	"github.com/go-telegram/bot"
+)
+
+const (
+	gitHubOwner    = "kroexov"
+	gitHubRepoName = "ludomania"
 )
 
 type Config struct {
@@ -37,26 +44,9 @@ type App struct {
 	dbc     *pg.DB
 	isDevel bool
 
-	cronService *CronService
-	bs          *botService.BotService
-}
-
-type CronService struct {
-	cron *botService.Cron
-}
-
-func NewCronService(bs *botService.BotService) *CronService {
-	return &CronService{
-		cron: botService.NewCron(bs),
-	}
-}
-
-func (cs *CronService) RegisterTasks() {
-	cs.cron.RegisterTask("update.stars.limit", botService.DefaultSchedule, cs.cron.StarsLimitTask)
-}
-
-func (cs *CronService) Start() {
-	cs.cron.Start()
+	gs *githubService.GithubService
+	cs *cronService.CronService
+	bs *botService.BotService
 }
 
 func New(appName string, verbose bool, cfg Config, db db.DB, dbc *pg.DB) *App {
@@ -70,7 +60,9 @@ func New(appName string, verbose bool, cfg Config, db db.DB, dbc *pg.DB) *App {
 
 	a.SetStdLoggers(verbose)
 
+	a.gs = githubService.NewGithubService(gitHubOwner, gitHubRepoName)
 	a.bs = botService.NewBotService(a.Logger, a.db)
+	a.cs = cronService.NewCronService(a.bs, a.gs)
 
 	opts := []bot.Option{bot.WithDefaultHandler(a.bs.DefaultHandler)}
 	b, err := bot.New(cfg.Bot.Token, opts...)
@@ -87,8 +79,8 @@ func (a *App) Run() error {
 
 	a.bs.RegisterBotHandlers(a.b)
 
-	a.cronService = NewCronService(a.bs)
-	a.cronService.RegisterTasks()
+	a.cs.RegisterTasks()
+	a.cs.Start()
 
 	// for local usage
 	if a.isDevel {

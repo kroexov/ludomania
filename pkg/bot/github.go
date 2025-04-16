@@ -3,22 +3,26 @@ package bot
 import (
 	"context"
 	"github.com/google/go-github/v55/github"
-	"log"
 )
 
-const (
-	gitHubOwner    = "kroexov"
-	gitHubRepoName = "ludomania"
-)
+type GithubService struct {
+	client *github.Client
+	owner  string
+	repo   string
+}
 
-func getStarsCount() int {
-	client := github.NewClient(nil)
-	ctx := context.Background()
-	repo, _, err := client.Repositories.Get(ctx, gitHubOwner, gitHubRepoName)
-	if err != nil {
-		log.Fatal(err)
+func NewGithubService(owner, repo string) *GithubService {
+	return &GithubService{
+		client: github.NewClient(nil),
+		owner:  owner,
+		repo:   repo,
 	}
+}
 
-	stars := repo.GetStargazersCount()
-	return stars
+func (s *GithubService) GetStarsCount(ctx context.Context) (int, error) {
+	r, _, err := s.client.Repositories.Get(ctx, s.owner, s.repo)
+	if err != nil {
+		return 0, err
+	}
+	return r.GetStargazersCount(), nil
 }

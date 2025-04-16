@@ -102,11 +102,6 @@ func (bs *BotService) SetLimitByBack(newLimit int) {
 	bs.limitByBack = newLimit
 	bs.Logger.Printf("New limit : %d", bs.limitByBack)
 }
-func (bs *BotService) RegisterCron() {
-	cronScheduler := NewCron(bs)
-	cronScheduler.RegisterTask("update.stars.limit", DefaultSchedule, cronScheduler.StarsLimitTask)
-	go cronScheduler.Start()
-}
 func NewBotService(logger embedlog.Logger, dbo db.DB) *BotService {
 	return &BotService{Logger: logger, db: dbo, cr: db.NewCommonRepo(dbo), mayatinRouletteBets: new(sync.Map), papikyanLock: make(map[int]struct{}), limitByBack: 10}
 }
