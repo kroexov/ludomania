@@ -1,4 +1,4 @@
-package bot
+package ludomania
 
 import (
 	"bytes"
@@ -34,7 +34,6 @@ const (
 	patternMayatinRouletteBetP = "_p"
 	patternMayatinRouletteBetB = "_b"
 	patternMayatinRouletteBetU = "_u"
-	DefaultSchedule            = "*/1 * * * *"
 )
 
 var p = message.NewPrinter(language.German)
@@ -678,7 +677,7 @@ func (bs *BotService) BuyBackHandler(ctx context.Context, b *bot.Bot, update *mo
 	}
 
 	if user.Losses >= bs.limitByBack {
-		bs.respondToCallback(ctx, b, update.CallbackQuery.ID, "Вы превысили лимит по проджам квартир. Чтобы повысить лимит, поставьте звездочку в гитхабе")
+		bs.respondToCallback(ctx, b, update.CallbackQuery.ID, "Вы превысили лимит по продажам квартир. Чтобы повысить лимит, поставьте звездочку в гитхабе")
 		return
 	}
 

@@ -1,5 +1,5 @@
-// bot/cron.go
-package bot
+// ludomania/cron.go
+package ludomania
 
 import (
 	"context"
@@ -7,6 +7,10 @@ import (
 	"time"
 
 	"github.com/robfig/cron/v3"
+)
+
+const (
+	DefaultSchedule = "*/1 * * * *"
 )
 
 type CronService struct {

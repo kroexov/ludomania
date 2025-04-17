@@ -8,11 +8,11 @@ import (
 	"os/signal"
 	"time"
 
-	botService "gradebot/pkg/bot"
-	cronService "gradebot/pkg/bot"
-	githubService "gradebot/pkg/bot"
 	"gradebot/pkg/db"
 	"gradebot/pkg/embedlog"
+	botService "gradebot/pkg/ludomania"
+	cronService "gradebot/pkg/ludomania"
+	githubService "gradebot/pkg/ludomania"
 
 	"github.com/go-pg/pg/v10"
 	"github.com/go-telegram/bot"
@@ -108,6 +108,6 @@ func (a *App) Shutdown(timeout time.Duration) {
 	defer cancel()
 
 	if _, err := a.b.Close(ctx); err != nil {
-		a.Errorf("shutting down bot err=%q", err)
+		a.Errorf("shutting down ludomania err=%q", err)
 	}
 }
