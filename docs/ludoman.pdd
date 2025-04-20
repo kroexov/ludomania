@@ -2,7 +2,7 @@
 
 <DBMODEL Version="1.92" TYPE="PostgreSQL">
 
-<MODELSETTINGS MDDVERSION="1.16.0 (build 1173)" ModelProject="" ModelName="apisrv" ModelCompany="" ModelAuthor="" ModelCopyright="" ModelVersion="" ModelVersionAI="0" ModelSaveScriptsWithVersion="0" ModelCreated="2025-03-30 18:37:06" ModelUpdated="2025-03-30 19:03:33" Description="" Annotation="" ZoomFac="175.00" XPos="0" YPos="0" PrintLink="" GenSettings="object GenSettings1: TGenSettings\n  TextCharCase = tccMixed\n  ModelCheck = True\n  DropIfExists = True\n  NotValidConstraints = False\n  ConcurrentlyIndexes = False\n  ISQL = False\n  ExecuteAfterGeneration = True\n  DBOptions = [dbgoBeginScript, dbgoEndScript]\n  ViewOptions = [viewgoCreate, viewgoCreateRule]\n  SPOptions = [spgoCreate]\n  TableOptions = [tblgoCreate, tblgoBeginScript, tblgoEndScript, tblgoComment, tblgoCreatePK, tblgoCreateFK, tblgoCreateIndex, tblgoCreateRule, tblgoCreateTrigger, tblgoCreateCHECK, tblgoFieldDefault]\n  OwnerOptions = []\n  ACLOptions = []\n  ModifyOptions = [mgoKeepTbls, mgoBackupTbls, mgoTraceRenaming]\n  RoleCreate = False\n  RoleWhenCreate = rocrInScript\n  SQLTypeNames = False\nend\n" DisplaySettings="object DisplaySettings1: TDisplaySettings\n  ObjectsDisplay = [edoColumns, edoInhColumns, edoIndices, edoConstraints, edoTriggers, edoRules, edoColTypes, edoFKs, rdoRefName, spdoParameters, spdoResult, spdoParamTypes, spdoParamKind, vdoAttributes, vdoTargets, vdoRules]\n  Color = clWhite\n  ShowIcons = True\n  SnapGrid = True\n  DisplaySnap = True\n  SnapSize = 10\n  ShowPages = True\n  EntityFillColor = clWhite\n  EntityLineColor = clNavy\n  EntityFontColor = clBlack\n  SPFillColor = clCream\n  SPLineColor = clNavy\n  SPFontColor = clBlack\n  ViewFillColor = clMoneyGreen\n  ViewLineColor = clNavy\n  ViewFontColor = clBlack\n  RefNotation = 0\n  RefColor = clNavy\n  RefLabelColor = clWhite\n  RefLabelFontColor = clBlack\n  MinimapShapesStyle = mmssFillAndBorder\n  MinimapVisibleAreaStyle = mmvasBitmapShading\n  MinimapBackColor = clWhite\nend\n" DefaultDelete="3" DefaultUpdate="3" DefaultDataType="23" DefaultSchemaID="0" NamePatterns="" QueryDelimiter=";" DBQuoteCharacter="\A" EncloseNames="1" PKColumnsFirst="0" HPageCount="5" VPageCount="5" />
+<MODELSETTINGS MDDVERSION="1.16.0 (build 1173)" ModelProject="" ModelName="Noname2" ModelCompany="" ModelAuthor="" ModelCopyright="" ModelVersion="" ModelVersionAI="0" ModelSaveScriptsWithVersion="0" ModelCreated="2025-04-21 01:36:39" ModelUpdated="2025-04-21 01:36:39" Description="" Annotation="" ZoomFac="150.00" XPos="0" YPos="0" PrintLink="" GenSettings="object GenSettings1: TGenSettings\n  TextCharCase = tccMixed\n  ModelCheck = True\n  DropIfExists = True\n  NotValidConstraints = False\n  ConcurrentlyIndexes = False\n  ISQL = False\n  ExecuteAfterGeneration = True\n  DBOptions = [dbgoCreate, dbgoBeginScript, dbgoEndScript]\n  ViewOptions = [viewgoCreate, viewgoCreateRule]\n  SPOptions = [spgoCreate]\n  TableOptions = [tblgoCreate, tblgoBeginScript, tblgoEndScript, tblgoComment, tblgoCreatePK, tblgoCreateFK, tblgoCreateIndex, tblgoCreateRule, tblgoCreateTrigger, tblgoCreateCHECK, tblgoFieldDefault]\n  OwnerOptions = [owngoSchema, owngoTable, owngoView, owngoSP, owngoSequence, owngoUDT]\n  ACLOptions = [aclgoSchema, aclgoTable, aclgoView, aclgoSP, aclgoSequence]\n  ModifyOptions = [mgoKeepTbls, mgoBackupTbls, mgoTraceRenaming]\n  RoleCreate = True\n  RoleWhenCreate = rocrInScript\n  SQLTypeNames = False\nend\n" DisplaySettings="object DisplaySettings1: TDisplaySettings\n  ObjectsDisplay = [edoColumns, edoInhColumns, edoIndices, edoConstraints, edoTriggers, edoRules, edoColTypes, edoFKs, rdoRefName, spdoParameters, spdoResult, spdoParamTypes, spdoParamKind, vdoAttributes, vdoTargets, vdoRules]\n  Color = clWhite\n  ShowIcons = True\n  SnapGrid = True\n  DisplaySnap = True\n  SnapSize = 10\n  ShowPages = True\n  EntityFillColor = clWhite\n  EntityLineColor = clNavy\n  EntityFontColor = clBlack\n  SPFillColor = clCream\n  SPLineColor = clNavy\n  SPFontColor = clBlack\n  ViewFillColor = clMoneyGreen\n  ViewLineColor = clNavy\n  ViewFontColor = clBlack\n  RefNotation = 0\n  RefColor = clNavy\n  RefLabelColor = clWhite\n  RefLabelFontColor = clBlack\n  MinimapShapesStyle = mmssFillAndBorder\n  MinimapVisibleAreaStyle = mmvasBitmapShading\n  MinimapBackColor = clWhite\nend\n" DefaultDelete="3" DefaultUpdate="3" DefaultDataType="23" DefaultSchemaID="0" NamePatterns="" QueryDelimiter=";" DBQuoteCharacter="\A" EncloseNames="1" PKColumnsFirst="0" HPageCount="5" VPageCount="5" />
 
 <DATABASE Name="Database_1" CharacterSet="" Collate="" CType="" Tablespace="" Owner="" Template="" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Generate="0" />
 
@@ -10,15 +10,6 @@
 </STAMPS>
 
 <ROLES>
-<ROLE ID="3373" Name="pg_monitor" Roles="" Admins="" Generate="0" Comments="" Password="" CreateDB="0" SuperUser="0" CreateRole="0" Inherit="1" UpdateCatalogs="0" Login="0" PassEncrypted="0" Valid="2958465.99999"></ROLE>
-<ROLE ID="3374" Name="pg_read_all_settings" Roles="" Admins="3373" Generate="0" Comments="" Password="" CreateDB="0" SuperUser="0" CreateRole="0" Inherit="1" UpdateCatalogs="0" Login="0" PassEncrypted="0" Valid="2958465.99999"></ROLE>
-<ROLE ID="3375" Name="pg_read_all_stats" Roles="" Admins="3373" Generate="0" Comments="" Password="" CreateDB="0" SuperUser="0" CreateRole="0" Inherit="1" UpdateCatalogs="0" Login="0" PassEncrypted="0" Valid="2958465.99999"></ROLE>
-<ROLE ID="3377" Name="pg_stat_scan_tables" Roles="" Admins="3373" Generate="0" Comments="" Password="" CreateDB="0" SuperUser="0" CreateRole="0" Inherit="1" UpdateCatalogs="0" Login="0" PassEncrypted="0" Valid="2958465.99999"></ROLE>
-<ROLE ID="4569" Name="pg_read_server_files" Roles="" Admins="" Generate="0" Comments="" Password="" CreateDB="0" SuperUser="0" CreateRole="0" Inherit="1" UpdateCatalogs="0" Login="0" PassEncrypted="0" Valid="2958465.99999"></ROLE>
-<ROLE ID="4570" Name="pg_write_server_files" Roles="" Admins="" Generate="0" Comments="" Password="" CreateDB="0" SuperUser="0" CreateRole="0" Inherit="1" UpdateCatalogs="0" Login="0" PassEncrypted="0" Valid="2958465.99999"></ROLE>
-<ROLE ID="4571" Name="pg_execute_server_program" Roles="" Admins="" Generate="0" Comments="" Password="" CreateDB="0" SuperUser="0" CreateRole="0" Inherit="1" UpdateCatalogs="0" Login="0" PassEncrypted="0" Valid="2958465.99999"></ROLE>
-<ROLE ID="4200" Name="pg_signal_backend" Roles="" Admins="" Generate="0" Comments="" Password="" CreateDB="0" SuperUser="0" CreateRole="0" Inherit="1" UpdateCatalogs="0" Login="0" PassEncrypted="0" Valid="2958465.99999"></ROLE>
-<ROLE ID="10" Name="postgres" Roles="" Admins="" Generate="0" Comments="" Password="" CreateDB="1" SuperUser="1" CreateRole="1" Inherit="1" UpdateCatalogs="0" Login="1" PassEncrypted="0" Valid="2958465.99999"></ROLE>
 </ROLES>
 
 <SCHEMAS>
@@ -32,7 +23,11 @@
 </DOMAINS>
 
 <COMPOSITES>
-<COMPOSITE ID="10014" Name="ludomans" SchemaName="public" OwnerName="" Comments="" MasterTableOID="1415407">
+<COMPOSITE ID="10002" Name="ludomans" SchemaName="public" OwnerName="" Comments="" MasterTableOID="1004">
+	<COLUMNS>
+	</COLUMNS>
+</COMPOSITE>
+<COMPOSITE ID="10003" Name="transactions" SchemaName="public" OwnerName="" Comments="" MasterTableOID="1007">
 	<COLUMNS>
 	</COLUMNS>
 </COMPOSITE>
@@ -49,43 +44,79 @@
 
 <METADATA>
 <ENTITIES>
-<ENTITY ID="1415407" Name="ludomans" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" TablespaceID="0" XPos="370" YPos="130" Temporary="0" Unlogged="0" OnCommit="" Inherits="" FillColor="16777215" LineColor="8388608" FontColor="0" CharacterSet="" Collate="" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Generate="1" ACL="" StorageParams="" >
+<ENTITY ID="1004" Name="ludomans" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" TablespaceID="0" XPos="80" YPos="40" Temporary="0" Unlogged="0" OnCommit="" Inherits="" FillColor="16777215" LineColor="8388608" FontColor="0" CharacterSet="" Collate="" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Generate="1" ACL="" StorageParams="" >
 	<COLUMNS>
-		<COLUMN ID="1415474" Name="ludomanId" Pos="0" Datatype="23" Type="int4" Width="0" Prec="0" NotNull="1" AutoInc="3" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
-		<COLUMN ID="1415475" Name="ludomanNickname" Pos="1" Datatype="1043" Type="varchar" Width="255" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
-		<COLUMN ID="1415485" Name="tgId" Pos="2" Datatype="20" Type="int8" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="0" QuoteDefault="0" Comments=""></COLUMN>
-		<COLUMN ID="1415476" Name="balance" Pos="3" Datatype="20" Type="int8" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="0" QuoteDefault="0" Comments=""></COLUMN>
-		<COLUMN ID="1415477" Name="losses" Pos="4" Datatype="20" Type="int8" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="0" QuoteDefault="0" Comments=""></COLUMN>
-		<COLUMN ID="1415480" Name="totalLost" Pos="5" Datatype="20" Type="int8" Width="0" Prec="0" NotNull="0" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
-		<COLUMN ID="1415481" Name="totalWon" Pos="6" Datatype="20" Type="int8" Width="0" Prec="0" NotNull="0" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="8" Name="ludomanId" Pos="0" Datatype="23" Type="int4" Width="0" Prec="0" NotNull="1" AutoInc="3" Collation="" PrimaryKey="1" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="9" Name="ludomanNickname" Pos="1" Datatype="1043" Type="varchar" Width="255" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="10" Name="tgId" Pos="2" Datatype="20" Type="int8" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="0" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="11" Name="balance" Pos="3" Datatype="20" Type="int8" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="0" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="12" Name="losses" Pos="4" Datatype="20" Type="int8" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="0" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="13" Name="totalLost" Pos="5" Datatype="20" Type="int8" Width="0" Prec="0" NotNull="0" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="14" Name="totalWon" Pos="6" Datatype="20" Type="int8" Width="0" Prec="0" NotNull="0" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
 	</COLUMNS>
+	<REFERENCES_BEGIN>
+		<REFERENCE_BEGIN ID="7" />
+		<REFERENCE_BEGIN ID="8" />
+	</REFERENCES_BEGIN>
 	<CONSTRAINTS>
-		<CONSTRAINT ID="1415460" Name="Constraint0" Kind="1" Expression="" ReferenceIndex="1417310" FillFactor="" Comments="" TablespaceID="0" Deferrable="0" Method="0">
-			<CONSTRAINTCOLUMNS COMMATEXT="1415475"></CONSTRAINTCOLUMNS>
+		<CONSTRAINT ID="3" Name="Constraint0" Kind="1" Expression="" ReferenceIndex="0" FillFactor="" Comments="" TablespaceID="0" Deferrable="0" Method="0">
+			<CONSTRAINTCOLUMNS COMMATEXT="9"></CONSTRAINTCOLUMNS>
 			<CONSTRAINTOPERATORS COMMATEXT=""></CONSTRAINTOPERATORS>
 		</CONSTRAINT>
-		<CONSTRAINT ID="1415472" Name="Constraint1" Kind="1" Expression="" ReferenceIndex="1417311" FillFactor="" Comments="" TablespaceID="0" Deferrable="0" Method="0">
-			<CONSTRAINTCOLUMNS COMMATEXT="1415485"></CONSTRAINTCOLUMNS>
+		<CONSTRAINT ID="4" Name="Constraint1" Kind="1" Expression="" ReferenceIndex="0" FillFactor="" Comments="" TablespaceID="0" Deferrable="0" Method="0">
+			<CONSTRAINTCOLUMNS COMMATEXT="10"></CONSTRAINTCOLUMNS>
+			<CONSTRAINTOPERATORS COMMATEXT=""></CONSTRAINTOPERATORS>
+		</CONSTRAINT>
+		<CONSTRAINT ID="5" Name="" Kind="2" Expression="" ReferenceIndex="0" FillFactor="" Comments="" TablespaceID="0" Deferrable="0" Method="0">
+			<CONSTRAINTCOLUMNS COMMATEXT="8"></CONSTRAINTCOLUMNS>
 			<CONSTRAINTOPERATORS COMMATEXT=""></CONSTRAINTOPERATORS>
 		</CONSTRAINT>
 	</CONSTRAINTS>
 	<INDEXES>
-		<INDEX ID="1415412" Name="IX_ludomans_ludomanNickName" Unique="0" Method="2" Predicate="" TablespaceID="0" ReferenceConstraint="0" StorageParams="" Comments="">
+		<INDEX ID="1005" Name="IX_ludomans_ludomanNickName" Unique="0" Method="2" Predicate="" TablespaceID="0" ReferenceConstraint="0" StorageParams="" Comments="">
 			<INDEXCOLUMNS COMMATEXT="ludomanNickname"></INDEXCOLUMNS>
-			<INDEXSORTS COMMATEXT="\A\A"></INDEXSORTS>
-			<INDEXNULLS COMMATEXT="\A\A"></INDEXNULLS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
 		</INDEX>
-		<INDEX ID="1415420" Name="IX_ludomans_tgID" Unique="0" Method="1" Predicate="" TablespaceID="0" ReferenceConstraint="0" StorageParams="" Comments="">
+		<INDEX ID="1006" Name="IX_ludomans_tgID" Unique="0" Method="1" Predicate="" TablespaceID="0" ReferenceConstraint="0" StorageParams="" Comments="">
 			<INDEXCOLUMNS COMMATEXT="tgId"></INDEXCOLUMNS>
-			<INDEXSORTS COMMATEXT="\A\A"></INDEXSORTS>
-			<INDEXNULLS COMMATEXT="\A\A"></INDEXNULLS>
+			<INDEXSORTS COMMATEXT=""></INDEXSORTS>
+			<INDEXNULLS COMMATEXT=""></INDEXNULLS>
 		</INDEX>
 	</INDEXES>
+</ENTITY>
+
+<ENTITY ID="1007" Name="transactions" SchemaOID="0" SchemaName="public" OwnerID="0" OwnerName="" TablespaceID="0" XPos="330" YPos="40" Temporary="0" Unlogged="0" OnCommit="" Inherits="" FillColor="16777215" LineColor="8388608" FontColor="0" CharacterSet="" Collate="" Comments="" Description="" Annotation="" BeginScript="" EndScript="" Generate="1" ACL="" StorageParams="" >
+	<COLUMNS>
+		<COLUMN ID="15" Name="transactionId" Pos="0" Datatype="23" Type="int4" Width="0" Prec="0" NotNull="1" AutoInc="3" Collation="" PrimaryKey="1" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="16" Name="fromLudomanId" Pos="1" Datatype="23" Type="int4" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="1" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="17" Name="toLudomanId" Pos="2" Datatype="23" Type="int4" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="1" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="18" Name="amount" Pos="3" Datatype="20" Type="int8" Width="0" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="" QuoteDefault="0" Comments=""></COLUMN>
+		<COLUMN ID="19" Name="createdAt" Pos="4" Datatype="1114" Type="timestamp" Width="-1" Prec="0" NotNull="1" AutoInc="0" Collation="" PrimaryKey="0" IsFKey="0" DefaultValue="now()" QuoteDefault="0" Comments=""></COLUMN>
+	</COLUMNS>
+	<REFERENCES_END>
+		<REFERENCE_END ID="7" />
+		<REFERENCE_END ID="8" />
+	</REFERENCES_END>
+	<CONSTRAINTS>
+		<CONSTRAINT ID="6" Name="" Kind="2" Expression="" ReferenceIndex="0" FillFactor="" Comments="" TablespaceID="0" Deferrable="0" Method="0">
+			<CONSTRAINTCOLUMNS COMMATEXT="15"></CONSTRAINTCOLUMNS>
+			<CONSTRAINTOPERATORS COMMATEXT=""></CONSTRAINTOPERATORS>
+		</CONSTRAINT>
+	</CONSTRAINTS>
 </ENTITY>
 
 </ENTITIES>
 
 <REFERENCES>
+<REFERENCE ID="7" Name="fk_fromLudomanId" SOURCE="1004" DESTINATION="1007" FKIDS="8=16\n" Direction="0" RefColor="8388608" RefLabelColor="16777215" RefLabelFontColor="0" OnDelete="3" OnUpdate="3" Deferrable="0" MatchType="0" Comments="" Description="" Annotation="" Generate="1" FKConstraint_ID="0" LabelPointNumber="2" LabelPosition="0.5" ManualStartTailPosition="0" ManualEndTailPosition="0" />
+	<USERPOINTS>
+	</USERPOINTS>
+</REFERENCE>
+<REFERENCE ID="8" Name="fk_toLudomanId" SOURCE="1004" DESTINATION="1007" FKIDS="8=17\n" Direction="0" RefColor="8388608" RefLabelColor="16777215" RefLabelFontColor="0" OnDelete="3" OnUpdate="3" Deferrable="0" MatchType="0" Comments="" Description="" Annotation="" Generate="1" FKConstraint_ID="0" LabelPointNumber="2" LabelPosition="0.5" ManualStartTailPosition="0" ManualEndTailPosition="0" />
+	<USERPOINTS>
+	</USERPOINTS>
+</REFERENCE>
 </REFERENCES>
 
 <NOTES>
@@ -99,4 +130,3 @@
 
 </METADATA>
 </DBMODEL>
-    
