@@ -22,6 +22,7 @@ import (
 )
 
 const (
+	patternConfirm             = "confirm"
 	patternPapikSlots          = "papikSlots"
 	patternMayatinRoulette     = "mayatinRoulette"
 	patternMayatinRouletteBet  = "mayatinBet"
@@ -105,13 +106,10 @@ func (bs *BotService) RegisterBotHandlers(b *bot.Bot) {
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, playersRating, bot.MatchTypePrefix, bs.PlayersRatingHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternBuyBack, bot.MatchTypePrefix, bs.BuyBackHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternBuyBackHouse, bot.MatchTypePrefix, bs.BuybackHouseHandler)
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternConfirm, bot.MatchTypePrefix, bs.handleCallbackQuery3)
 }
 
 func (bs *BotService) DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
-	if update.CallbackQuery != nil && strings.HasPrefix(update.CallbackQuery.Data, "confirm:") {
-		bs.handleCallbackQuery3(ctx, b, update)
-		return
-	}
 	if update.Message != nil && update.Message.ViaBot != nil && update.Message.Chat.Type == models.ChatTypeSupergroup && update.Message.ViaBot.ID == 7672429736 && update.Message.MessageThreadID != 8388 {
 		_, err := b.DeleteMessage(ctx, &bot.DeleteMessageParams{ChatID: update.Message.Chat.ID, MessageID: update.Message.ID})
 		if err != nil {
@@ -131,34 +129,35 @@ func (bs *BotService) Transaction(ctx context.Context, userFrom db.Ludoman, user
 	if userFrom.Balance < amount {
 		return fmt.Errorf("недостаточно средств: нужно %d, а есть %d", amount, userFrom.Balance)
 	}
+
 	err := dbo.RunInTransaction(ctx, func(tx *pg.Tx) error {
-		query1 := `UPDATE ludomans SET balance = balance -(?0) WHERE "ludomanId" in(?1)`
-		_, err := tx.Exec(query1, amount, userFrom.ID)
+		query1 := `UPDATE ludomans SET balance = balance -(?0) WHERE "ludomanId" = ?1`
+		if _, err := tx.Exec(query1, amount, userFrom.ID); err != nil {
+			return err
+		}
+		query2 := `UPDATE ludomans SET balance = balance +(?0) WHERE "ludomanId" = ?1`
+		if _, err := tx.Exec(query2, amount, userTo.ID); err != nil {
+			return err
+		}
+
+		txRepo := bs.cr.WithTransaction(tx)
+
+		_, err := txRepo.AddTransaction(ctx, &db.Transaction{
+			FromLudomanID: userFrom.ID,
+			ToLudomanID:   userTo.ID,
+			Amount:        amount,
+		})
 		if err != nil {
 			return err
 		}
 
-		query2 := `UPDATE ludomans SET balance = balance +(?0) WHERE "ludomanId" in(?1)`
-		_, err = tx.Exec(query2, amount, userTo.ID)
-		if err != nil {
-			return err
-		}
 		return nil
 	})
 
 	if err != nil {
-		return err
+		return fmt.Errorf("ошибка транзакции: %w", err)
 	}
 
-	newTransaction, err := bs.cr.AddTransaction(ctx, &db.Transaction{
-		FromLudomanID: userFrom.ID,
-		ToLudomanID:   userTo.ID,
-		Amount:        amount,
-	})
-	if err != nil {
-		return err
-	}
-	fmt.Print(newTransaction.ID)
 	return nil
 }
 
@@ -167,74 +166,67 @@ func (bs *BotService) isUserFromBot(ctx context.Context, nickname string) bool {
 	user, err := bs.cr.OneLudoman(ctx, search)
 	return err == nil && user != nil
 }
-func IsNumberGreaterThan100000(s string) bool {
-	n, err := strconv.Atoi(s)
-	if err != nil {
-		return false
-	}
-	return n >= 100000
-}
 func (bs *BotService) fTest(ctx context.Context, b *bot.Bot, update *models.Update) bool {
 	if update.InlineQuery == nil {
 		return false
 	}
-	parts := strings.Fields(update.InlineQuery.Query)
+
+	userInput := update.InlineQuery.Query
+	parts := strings.SplitN(userInput, " ", 2)
+
 	if len(parts) != 2 {
 		return false
 	}
 
-	userInput := update.InlineQuery.Query
-	parts = strings.SplitN(userInput, " ", 2)
-
-	firstPart := parts[0] // ":nickname"
-	if len(firstPart) > 2 {
+	firstPart := parts[0]
+	if len(firstPart) > 1 {
 		firstPart = firstPart[1:]
-		secondPart := ""
-		if len(parts) > 1 {
-			secondPart = parts[1] // "amount"
-		}
+	}
 
-		value, err := strconv.Atoi(secondPart)
-		if err != nil {
-			fmt.Println("Ошибка преобразования строки в число:", err)
+	secondPart := parts[1]
+	value, err := strconv.Atoi(secondPart)
+	if err != nil {
+		fmt.Printf("Ошибка преобразования строки в число: %v\n", err)
+		return false
+	}
+	fmt.Println("value =", value)
+
+	if value >= 100000 && bs.isUserFromBot(ctx, firstPart) {
+		username := update.InlineQuery.From.Username
+
+		userFrom, err := bs.cr.OneLudoman(ctx, &db.LudomanSearch{LudomanNickname: &username})
+		if err != nil || userFrom == nil {
+			fmt.Println("Юзера-отправителя не существует или ошибка БД")
 			return false
 		}
 
-		fmt.Println("value =", value)
-		if IsNumberGreaterThan100000(secondPart) && bs.isUserFromBot(ctx, firstPart) {
-			username := update.InlineQuery.From.Username
-			userFrom, err := bs.cr.OneLudoman(ctx, &db.LudomanSearch{LudomanNickname: &username})
-			if err != nil || userFrom == nil {
-				fmt.Println("Юзера-отправителя не существует или ошибка БД")
-				return false
-			}
-			fmt.Println("баланс и value =", userFrom.Balance, value)
-			if userFrom.Balance >= value {
-				keyboard := &models.InlineKeyboardMarkup{
-					InlineKeyboard: [][]models.InlineKeyboardButton{{
-						models.InlineKeyboardButton{
-							Text:         "Подтвердить перевод",
-							CallbackData: fmt.Sprintf("confirm:%s:%d", firstPart, value),
-						},
-					}},
-				}
-
-				result := &models.InlineQueryResultArticle{
-					ID:    "1",
-					Title: "Подтвердите перевод",
-					InputMessageContent: &models.InputTextMessageContent{
-						MessageText: fmt.Sprintf("Перевести %d пользователю %s?", value, firstPart),
+		fmt.Println("баланс и value =", userFrom.Balance, value)
+		if userFrom.Balance >= value {
+			keyboard := &models.InlineKeyboardMarkup{
+				InlineKeyboard: [][]models.InlineKeyboardButton{{
+					{
+						Text:         "Подтвердить перевод",
+						CallbackData: fmt.Sprintf("confirm%s:%d", firstPart, value),
 					},
-					ReplyMarkup: keyboard,
-				}
-
-				b.AnswerInlineQuery(ctx, &bot.AnswerInlineQueryParams{
-					InlineQueryID: update.InlineQuery.ID,
-					Results:       []models.InlineQueryResult{result},
-				})
+				}},
 			}
+
+			result := &models.InlineQueryResultArticle{
+				ID:    "1",
+				Title: "Подтвердите перевод",
+				InputMessageContent: &models.InputTextMessageContent{
+					MessageText: fmt.Sprintf("Перевести %d пользователю %s?", value, firstPart),
+				},
+				ReplyMarkup: keyboard,
+			}
+
+			b.AnswerInlineQuery(ctx, &bot.AnswerInlineQueryParams{
+				InlineQueryID: update.InlineQuery.ID,
+				Results:       []models.InlineQueryResult{result},
+			})
 		}
 	}
+
 	return true
 }
 
@@ -243,7 +235,7 @@ func (bs *BotService) handleCallbackQuery3(ctx context.Context, b *bot.Bot, upda
 		return
 	}
 	data := update.CallbackQuery.Data
-	if !strings.HasPrefix(data, "confirm:") {
+	if !strings.HasPrefix(data, "confirm") {
 		return
 	}
 	parts := strings.Split(data, ":")
