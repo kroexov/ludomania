@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	patternConfirm             = "confirm"
+	patternConfirm             = "confirm:"
 	patternPapikSlots          = "papikSlots"
 	patternMayatinRoulette     = "mayatinRoulette"
 	patternMayatinRouletteBet  = "mayatinBet"
@@ -106,7 +106,7 @@ func (bs *BotService) RegisterBotHandlers(b *bot.Bot) {
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, playersRating, bot.MatchTypePrefix, bs.PlayersRatingHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternBuyBack, bot.MatchTypePrefix, bs.BuyBackHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternBuyBackHouse, bot.MatchTypePrefix, bs.BuybackHouseHandler)
-	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternConfirm, bot.MatchTypePrefix, bs.handleCallbackQuery3)
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternConfirm, bot.MatchTypePrefix, bs.handleCallbackQueryTransaction)
 }
 
 func (bs *BotService) DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -166,7 +166,7 @@ func (bs *BotService) isUserFromBot(ctx context.Context, nickname string) bool {
 	user, err := bs.cr.OneLudoman(ctx, search)
 	return err == nil && user != nil
 }
-func (bs *BotService) fTest(ctx context.Context, b *bot.Bot, update *models.Update) bool {
+func (bs *BotService) transferInlineQuery(ctx context.Context, b *bot.Bot, update *models.Update) bool {
 	if update.InlineQuery == nil {
 		return false
 	}
@@ -205,8 +205,8 @@ func (bs *BotService) fTest(ctx context.Context, b *bot.Bot, update *models.Upda
 			keyboard := &models.InlineKeyboardMarkup{
 				InlineKeyboard: [][]models.InlineKeyboardButton{{
 					{
-						Text:         "Подтвердить перевод",
-						CallbackData: fmt.Sprintf("confirm%s:%d", firstPart, value),
+						Text:         fmt.Sprintf("Подтвердить перевод %d для %s", value, firstPart),
+						CallbackData: fmt.Sprintf("confirm:%s:%d", firstPart, value),
 					},
 				}},
 			}
@@ -224,83 +224,123 @@ func (bs *BotService) fTest(ctx context.Context, b *bot.Bot, update *models.Upda
 				InlineQueryID: update.InlineQuery.ID,
 				Results:       []models.InlineQueryResult{result},
 			})
+
 		}
 	}
 
 	return true
 }
 
-func (bs *BotService) handleCallbackQuery3(ctx context.Context, b *bot.Bot, update *models.Update) {
+func (bs *BotService) handleCallbackQueryTransaction(ctx context.Context, b *bot.Bot, update *models.Update) {
 	if update.CallbackQuery == nil {
 		return
 	}
 	data := update.CallbackQuery.Data
-	if !strings.HasPrefix(data, "confirm") {
+	if !strings.HasPrefix(data, "confirm:") {
 		return
 	}
-	parts := strings.Split(data, ":")
+	parts := strings.SplitN(data, ":", 3)
 	if len(parts) != 3 {
 		b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
 			CallbackQueryID: update.CallbackQuery.ID,
-			Text:            "Неверные данные для подтверждения.",
+			Text:            "Неверный формат подтверждения.",
+			ShowAlert:       true,
 		})
+		bs.deleteCallbackMessage(ctx, b, update)
 		return
 	}
 	targetNick := parts[1]
-	value, err := strconv.Atoi(parts[2])
+	valueStr := parts[2]
+	value, err := strconv.Atoi(valueStr)
 	if err != nil {
 		b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
 			CallbackQueryID: update.CallbackQuery.ID,
 			Text:            "Некорректная сумма.",
+			ShowAlert:       true,
 		})
+		bs.deleteCallbackMessage(ctx, b, update)
 		return
 	}
-
 	fromUsername := update.CallbackQuery.From.Username
 	userFrom, err := bs.cr.OneLudoman(ctx, &db.LudomanSearch{LudomanNickname: &fromUsername})
 	if err != nil || userFrom == nil {
 		b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
 			CallbackQueryID: update.CallbackQuery.ID,
 			Text:            "Ошибка поиска отправителя.",
+			ShowAlert:       true,
 		})
+		bs.deleteCallbackMessage(ctx, b, update)
 		return
 	}
-
 	userTo, err := bs.cr.OneLudoman(ctx, &db.LudomanSearch{LudomanNickname: &targetNick})
 	if err != nil || userTo == nil {
 		b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
 			CallbackQueryID: update.CallbackQuery.ID,
 			Text:            "Получатель не найден.",
+			ShowAlert:       true,
 		})
+		bs.deleteCallbackMessage(ctx, b, update)
 		return
 	}
-
 	if userFrom.Balance < value {
 		b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
 			CallbackQueryID: update.CallbackQuery.ID,
 			Text:            "Недостаточно средств.",
+			ShowAlert:       true,
 		})
+		bs.deleteCallbackMessage(ctx, b, update)
 		return
 	}
-
 	err = bs.Transaction(ctx, *userFrom, *userTo, value, bs.db)
 	if err != nil {
 		b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
 			CallbackQueryID: update.CallbackQuery.ID,
 			Text:            "Ошибка транзакции.",
+			ShowAlert:       true,
 		})
+		bs.deleteCallbackMessage(ctx, b, update)
 		return
 	}
-
 	b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
 		CallbackQueryID: update.CallbackQuery.ID,
 		Text:            "Платеж успешно выполнен.",
 		ShowAlert:       true,
 	})
+
+	if update.CallbackQuery.InlineMessageID != "" {
+		b.EditMessageText(ctx, &bot.EditMessageTextParams{
+			InlineMessageID: update.CallbackQuery.InlineMessageID,
+			Text:            fmt.Sprintf("Пользователь @%s успешно перевел %d пользователю @%s", fromUsername, value, targetNick),
+		})
+	}
+}
+
+func (bs *BotService) deleteCallbackMessage(ctx context.Context, b *bot.Bot, update *models.Update) {
+	if update.CallbackQuery.Message.Message != nil {
+		chatID := update.CallbackQuery.Message.Message.Chat.ID
+		messageID := update.CallbackQuery.Message.Message.ID
+
+		if _, err := b.DeleteMessage(ctx, &bot.DeleteMessageParams{
+			ChatID:    chatID,
+			MessageID: messageID,
+		}); err != nil {
+			bs.Errorf("не удалось удалить сообщение: %v", err)
+		}
+		return
+	}
+
+	if update.CallbackQuery.InlineMessageID != "" {
+		if _, err := b.EditMessageReplyMarkup(ctx, &bot.EditMessageReplyMarkupParams{
+			InlineMessageID: update.CallbackQuery.InlineMessageID,
+			ReplyMarkup:     nil,
+		}); err != nil {
+			bs.Errorf("не удалось удалить сообщение InlineMessage : %v", err)
+		}
+	}
 }
 
 func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update *models.Update) error {
-	if bs.fTest(ctx, b, update) {
+	if bs.transferInlineQuery(ctx, b, update) {
 		return nil
 	}
 	username := update.InlineQuery.From.Username
