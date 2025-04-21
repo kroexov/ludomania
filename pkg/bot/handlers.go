@@ -310,7 +310,7 @@ func (bs *BotService) handleCallbackQueryTransaction(ctx context.Context, b *bot
 	if update.CallbackQuery.InlineMessageID != "" {
 		b.EditMessageText(ctx, &bot.EditMessageTextParams{
 			InlineMessageID: update.CallbackQuery.InlineMessageID,
-			Text:            fmt.Sprintf("Пользователь @%s успешно перевел %d пользователю @%s", fromUsername, value, targetNick),
+			Text:            fmt.Sprintf("Пользователь @%s успешно перевел %d I$ coins пользователю @%s", fromUsername, value, targetNick),
 		})
 	}
 }
