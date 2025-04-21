@@ -206,7 +206,7 @@ func (bs *BotService) transferInlineQuery(ctx context.Context, b *bot.Bot, updat
 				InlineKeyboard: [][]models.InlineKeyboardButton{{
 					{
 						Text:         fmt.Sprintf("Подтвердить перевод %d для %s", value, firstPart),
-						CallbackData: fmt.Sprintf("confirm:%s:%d", firstPart, value),
+						CallbackData: fmt.Sprintf("confirm:%s:%s:%d", username, firstPart, value),
 					},
 				}},
 			}
@@ -236,11 +236,9 @@ func (bs *BotService) handleCallbackQueryTransaction(ctx context.Context, b *bot
 		return
 	}
 	data := update.CallbackQuery.Data
-	if !strings.HasPrefix(data, "confirm:") {
-		return
-	}
-	parts := strings.SplitN(data, ":", 3)
-	if len(parts) != 3 {
+
+	parts := strings.SplitN(data, ":", 4)
+	if len(parts) != 4 {
 		b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
 			CallbackQueryID: update.CallbackQuery.ID,
 			Text:            "Неверный формат подтверждения.",
@@ -249,9 +247,21 @@ func (bs *BotService) handleCallbackQueryTransaction(ctx context.Context, b *bot
 		bs.deleteCallbackMessage(ctx, b, update)
 		return
 	}
-	targetNick := parts[1]
-	valueStr := parts[2]
-	value, err := strconv.Atoi(valueStr)
+	initiatorNick := parts[1]
+	targetNick := parts[2]
+	value, err := strconv.Atoi(parts[3])
+
+	clickerNick := update.CallbackQuery.From.Username
+
+	if clickerNick != initiatorNick {
+		_, _ = b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+			CallbackQueryID: update.CallbackQuery.ID,
+			Text:            "Это не ваш автомат! Только @" + initiatorNick + " может подтвердить перевод.",
+			ShowAlert:       true,
+		})
+		return
+	}
+
 	if err != nil {
 		b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
 			CallbackQueryID: update.CallbackQuery.ID,
@@ -272,6 +282,15 @@ func (bs *BotService) handleCallbackQueryTransaction(ctx context.Context, b *bot
 		bs.deleteCallbackMessage(ctx, b, update)
 		return
 	}
+	if userFrom.LudomanNickname != update.CallbackQuery.From.Username {
+		_, err = b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+			CallbackQueryID: update.CallbackQuery.ID,
+			Text:            "Это не ваш автомат! Нажмите на название бота и тоже сможете сыграть :)",
+			ShowAlert:       true,
+		})
+		return
+	}
+
 	userTo, err := bs.cr.OneLudoman(ctx, &db.LudomanSearch{LudomanNickname: &targetNick})
 	if err != nil || userTo == nil {
 		b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
