@@ -93,6 +93,8 @@ type BotService struct {
 
 	limitByBack  int
 	papikyanLock map[int]struct{}
+
+	blackjackGames *sync.Map
 }
 
 func (bs *BotService) SetLimitByBack(newLimit int) {
@@ -102,7 +104,7 @@ func (bs *BotService) SetLimitByBack(newLimit int) {
 	bs.Logger.Printf("New limit : %d", bs.limitByBack)
 }
 func NewBotService(logger embedlog.Logger, dbo db.DB) *BotService {
-	return &BotService{Logger: logger, db: dbo, cr: db.NewCommonRepo(dbo), mayatinRouletteBets: new(sync.Map), papikyanLock: make(map[int]struct{}), limitByBack: 10}
+	return &BotService{Logger: logger, db: dbo, cr: db.NewCommonRepo(dbo), mayatinRouletteBets: new(sync.Map), papikyanLock: make(map[int]struct{}), limitByBack: 10, blackjackGames: new(sync.Map)}
 }
 
 func (bs *BotService) RegisterBotHandlers(b *bot.Bot) {
@@ -112,6 +114,7 @@ func (bs *BotService) RegisterBotHandlers(b *bot.Bot) {
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, playersRating, bot.MatchTypePrefix, bs.PlayersRatingHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternBuyBack, bot.MatchTypePrefix, bs.BuyBackHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternBuyBackHouse, bot.MatchTypePrefix, bs.BuybackHouseHandler)
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternBlackjack, bot.MatchTypePrefix, bs.BlackjackHandler)
 }
 
 func (bs *BotService) DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -201,6 +204,12 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 					ThumbnailURL: "https://i.ibb.co/Xfx3C5wH/image-1.jpg",
 					ReplyMarkup: models.InlineKeyboardMarkup{
 						InlineKeyboard: [][]models.InlineKeyboardButton{
+							{
+								models.InlineKeyboardButton{
+									Text:         "Блекджек с Даней Казанцевым",
+									CallbackData: patternBlackjack + "_" + strconv.Itoa(user.ID),
+								},
+							},
 							{
 								models.InlineKeyboardButton{
 									Text:         "Слоты Папикяна",
