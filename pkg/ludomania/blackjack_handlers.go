@@ -38,35 +38,44 @@ type BlackjackGame struct {
 
 func (bs *BotService) BlackjackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	parts := strings.Split(update.CallbackQuery.Data, "_")
+	fmt.Println("callback  == ", parts)
 	if len(parts) < 2 {
 		bs.Errorf("invalid blackjack data: %s", update.CallbackQuery.Data)
 		return
 	}
 
 	action := parts[0]
-	inlineMsgID := update.CallbackQuery.InlineMessageID
+	userID := -1
+	if len(parts) == 3 {
+		userID, _ = strconv.Atoi(parts[2])
+	} else {
+		userID, _ = strconv.Atoi(parts[1])
+	}
+	//userID, _ := strconv.Atoi(parts[1])
+	if userID == -1 {
+		bs.Errorf("invalid blackjack data: %s", update.CallbackQuery.Data)
+		return
+	}
+	fmt.Println("id юзера == ", userID)
 
 	switch {
 	case action == patternBlackjack:
-		bs.handleBlackjackStart(ctx, b, update)
+		bs.handleBlackjackStart(ctx, b, update, userID)
 	case strings.HasPrefix(action, patternBlackjackBet):
-		bs.handleBlackjackBet(ctx, b, update, parts)
+		bs.handleBlackjackBet(ctx, b, update, userID, parts)
 	case strings.HasPrefix(action, patternBlackjackAction):
-		bs.handleBlackjackAction(ctx, b, update, inlineMsgID, parts)
+		bs.handleBlackjackAction(ctx, b, update, userID, parts)
 	}
 }
 
-func (bs *BotService) handleBlackjackStart(ctx context.Context, b *bot.Bot, update *models.Update) {
-	parts := strings.Split(update.CallbackQuery.Data, "_")
-	userID, _ := strconv.Atoi(parts[1])
-	user, _ := bs.cr.LudomanByID(ctx, userID)
+func (bs *BotService) handleBlackjackStart(ctx context.Context, b *bot.Bot, update *models.Update, userID int) {
 
 	markup := models.InlineKeyboardMarkup{
 		InlineKeyboard: [][]models.InlineKeyboardButton{
 			{
-				{Text: "100K", CallbackData: fmt.Sprintf("bjBet_1_%d", user.ID)},
-				{Text: "500K", CallbackData: fmt.Sprintf("bjBet_5_%d", user.ID)},
-				{Text: "1M", CallbackData: fmt.Sprintf("bjBet_10_%d", user.ID)},
+				{Text: "100K", CallbackData: fmt.Sprintf("bjBet_1_%d", userID)},
+				{Text: "500K", CallbackData: fmt.Sprintf("bjBet_5_%d", userID)},
+				{Text: "1M", CallbackData: fmt.Sprintf("bjBet_10_%d", userID)},
 			},
 		},
 	}
@@ -85,10 +94,19 @@ func (bs *BotService) handleBlackjackStart(ctx context.Context, b *bot.Bot, upda
 	}
 }
 
-func (bs *BotService) handleBlackjackBet(ctx context.Context, b *bot.Bot, update *models.Update, parts []string) {
+func (bs *BotService) handleBlackjackBet(ctx context.Context, b *bot.Bot, update *models.Update, userID int, parts []string) {
 	bet, _ := strconv.Atoi(parts[1])
-	userID, _ := strconv.Atoi(parts[2])
-	user, _ := bs.cr.LudomanByID(ctx, userID)
+	//userID, _ := strconv.Atoi(parts[2])
+	user, err := bs.cr.LudomanByID(ctx, userID)
+	if err != nil {
+		bs.Errorf("Error getting user: %v", err)
+		return
+	}
+	if user == nil {
+		bs.respondToCallback(ctx, b, update.CallbackQuery.ID, "Пользователь не найден!")
+		return
+	}
+
 	betAmount := bet * 100000
 
 	if user.Balance < betAmount {
@@ -105,9 +123,9 @@ func (bs *BotService) handleBlackjackBet(ctx context.Context, b *bot.Bot, update
 		Deck:       strings.Join(deck, " "),
 	}
 
-	bs.blackjackGames.Store(update.CallbackQuery.InlineMessageID, game)
+	bs.blackjackGames.Store(userID, game)
 	bs.updateBalance(-betAmount, []int{userID}, false)
-	bs.renderGameState(ctx, b, update.CallbackQuery.InlineMessageID, game, false)
+	bs.renderGameState(ctx, b, update.CallbackQuery.InlineMessageID, userID, game, false)
 }
 
 func generateShuffledDeck() []string {
@@ -141,10 +159,8 @@ func drawCards(deck *[]string, n int) string {
 	return hand
 }
 
-func (bs *BotService) renderGameState(ctx context.Context, b *bot.Bot, inlineMsgID string, game *BlackjackGame, showDealer bool) {
+func (bs *BotService) renderGameState(ctx context.Context, b *bot.Bot, inlineMsgID string, userID int, game *BlackjackGame, showDealer bool) {
 	playerValue := calculateHandValue(game.PlayerHand)
-	game.mu.Lock()
-	defer game.mu.Unlock()
 
 	dealerHand := "?"
 	if !showDealer {
@@ -161,19 +177,21 @@ func (bs *BotService) renderGameState(ctx context.Context, b *bot.Bot, inlineMsg
 		playerValue,
 		dealerHand,
 	)
-
+	if calculateHandValue(game.PlayerHand) >= 21 {
+		game.IsCompleted = true
+	}
 	var buttons [][]models.InlineKeyboardButton
 	if !game.IsCompleted {
 		buttons = [][]models.InlineKeyboardButton{
 			{
-				{Text: "Взять", CallbackData: fmt.Sprintf("bjAct_hit_%s", inlineMsgID)},
-				{Text: "Стоп", CallbackData: fmt.Sprintf("bjAct_stand_%s", inlineMsgID)},
+				{Text: "Взять", CallbackData: fmt.Sprintf("bjAct_hit_%d", userID)},
+				{Text: "Стоп", CallbackData: fmt.Sprintf("bjAct_stand_%d", userID)},
 			},
 		}
-		if user, _ := bs.cr.LudomanByID(ctx, game.UserID); user.Balance >= game.Bet*100000 {
+		if user, _ := bs.cr.LudomanByID(ctx, userID); user.Balance >= game.Bet*100000 && len(game.PlayerHand) < 20 {
 			buttons[0] = append(buttons[0], models.InlineKeyboardButton{
 				Text:         "Удвоить",
-				CallbackData: fmt.Sprintf("bjAct_double_%s", inlineMsgID),
+				CallbackData: fmt.Sprintf("bjAct_double_%d", userID),
 			})
 		}
 	}
@@ -192,10 +210,13 @@ func (bs *BotService) renderGameState(ctx context.Context, b *bot.Bot, inlineMsg
 	}
 }
 
-func (bs *BotService) handleBlackjackAction(ctx context.Context, b *bot.Bot, update *models.Update, inlineMsgID string, parts []string) {
+func (bs *BotService) handleBlackjackAction(ctx context.Context, b *bot.Bot, update *models.Update, userID int, parts []string) {
 	action := parts[1]
-	gameInterface, _ := bs.blackjackGames.Load(inlineMsgID)
+	gameInterface, _ := bs.blackjackGames.Load(userID)
 	game := gameInterface.(*BlackjackGame)
+
+	fmt.Println("hand size == ", game.PlayerHand)
+	fmt.Println("hand size == ", len(game.PlayerHand))
 
 	switch action {
 	case "hit":
@@ -208,7 +229,7 @@ func (bs *BotService) handleBlackjackAction(ctx context.Context, b *bot.Bot, upd
 		newCard := deck[0]
 		game.PlayerHand += " " + newCard
 		game.Deck = strings.Join(deck[1:], " ")
-		if calculateHandValue(game.PlayerHand) > 21 {
+		if calculateHandValue(game.PlayerHand) >= 21 {
 			game.IsCompleted = true
 		}
 
@@ -217,8 +238,7 @@ func (bs *BotService) handleBlackjackAction(ctx context.Context, b *bot.Bot, upd
 		game.IsCompleted = true
 
 	case "double":
-
-		if user, _ := bs.cr.LudomanByID(ctx, game.UserID); user.Balance >= game.Bet*100000 {
+		if user, _ := bs.cr.LudomanByID(ctx, game.UserID); user.Balance >= game.Bet*100000 && len(game.PlayerHand) == 2 {
 			time.Sleep(3 * time.Second)
 			game.IsDoubled = true
 			deck := strings.Split(game.Deck, " ")
@@ -231,14 +251,14 @@ func (bs *BotService) handleBlackjackAction(ctx context.Context, b *bot.Bot, upd
 	}
 
 	if game.IsCompleted {
-		bs.finalizeGame(ctx, b, inlineMsgID, game)
+		bs.finalizeGame(ctx, b, update.CallbackQuery.InlineMessageID, userID, game)
 	} else {
-		bs.blackjackGames.Store(inlineMsgID, game)
-		bs.renderGameState(ctx, b, inlineMsgID, game, false)
+		bs.blackjackGames.Store(userID, game)
+		bs.renderGameState(ctx, b, update.CallbackQuery.InlineMessageID, userID, game, false)
 	}
 }
 
-func (bs *BotService) finalizeGame(ctx context.Context, b *bot.Bot, inlineMsgID string, game *BlackjackGame) {
+func (bs *BotService) finalizeGame(ctx context.Context, b *bot.Bot, inlineMsgID string, userID int, game *BlackjackGame) {
 
 	dealerHand := game.DealerHand
 	deck := strings.Split(game.Deck, " ")
@@ -260,17 +280,21 @@ func (bs *BotService) finalizeGame(ctx context.Context, b *bot.Bot, inlineMsgID 
 	defaultImage := "https://ibb.co/SDxYjTgD"
 
 	switch {
+	case playerValue == 21 && len(game.PlayerHand) < 20:
+		result = "БЛЕКДЖЕК! Поздравляем, выплата 3:2 !"
+		resultImage = "https://ibb.co/Vc0WKybS" // Игрок выиграл
+		bs.updateBalance(game.Bet*250000*multiplier, []int{userID}, false)
 	case playerValue > 21:
 		result = "Перебор! Вы проиграли"
 		resultImage = "https://ibb.co/B50vbT3R" // Диллер выиграл
 	case dealerValue > 21 || playerValue > dealerValue:
 		result = "Вы выиграли!"
 		resultImage = "https://ibb.co/Vc0WKybS" // Игрок выиграл
-		bs.updateBalance(game.Bet*200000*multiplier, []int{game.UserID}, false)
+		bs.updateBalance(game.Bet*200000*multiplier, []int{userID}, false)
 	case playerValue == dealerValue:
 		result = "Ничья! Возврат ставки"
 		resultImage = defaultImage
-		bs.updateBalance(game.Bet*100000*multiplier, []int{game.UserID}, false)
+		bs.updateBalance(game.Bet*100000*multiplier, []int{userID}, false)
 	default:
 		result = "Вы проиграли"
 		resultImage = "https://ibb.co/B50vbT3R" // Диллер выиграл
@@ -280,7 +304,7 @@ func (bs *BotService) finalizeGame(ctx context.Context, b *bot.Bot, inlineMsgID 
 		resultImage = defaultImage
 	}
 
-	user, _ := bs.cr.LudomanByID(ctx, game.UserID)
+	user, _ := bs.cr.LudomanByID(ctx, userID)
 	caption := fmt.Sprintf("%s\nВаши карты: %s (%d)\nКарты дилера: %s (%d)\nБаланс: %s",
 		result,
 		formatHand(game.PlayerHand),
@@ -293,7 +317,7 @@ func (bs *BotService) finalizeGame(ctx context.Context, b *bot.Bot, inlineMsgID 
 	markup := models.InlineKeyboardMarkup{
 		InlineKeyboard: [][]models.InlineKeyboardButton{
 			{
-				{Text: "Сыграть снова", CallbackData: fmt.Sprintf("bj_%d", game.UserID)},
+				{Text: "Сыграть снова", CallbackData: fmt.Sprintf("bj_%d", userID)},
 			},
 		},
 	}
@@ -310,7 +334,7 @@ func (bs *BotService) finalizeGame(ctx context.Context, b *bot.Bot, inlineMsgID 
 	if err != nil {
 		bs.Errorf("%v", err)
 	}
-	bs.blackjackGames.Delete(inlineMsgID)
+	bs.blackjackGames.Delete(userID)
 }
 
 func calculateHandValue(hand string) int {
