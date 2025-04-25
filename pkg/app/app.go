@@ -8,12 +8,19 @@ import (
 	"os/signal"
 	"time"
 
-	botService "gradebot/pkg/bot"
 	"gradebot/pkg/db"
 	"gradebot/pkg/embedlog"
+	botService "gradebot/pkg/ludomania"
+	cronService "gradebot/pkg/ludomania"
+	githubService "gradebot/pkg/ludomania"
 
 	"github.com/go-pg/pg/v10"
 	"github.com/go-telegram/bot"
+)
+
+const (
+	gitHubOwner    = "kroexov"
+	gitHubRepoName = "ludomania"
 )
 
 type Config struct {
@@ -37,7 +44,8 @@ type App struct {
 	dbc     *pg.DB
 	isDevel bool
 
-
+	gs *githubService.GithubService
+	cs *cronService.CronService
 	bs *botService.BotService
 }
 
@@ -52,7 +60,9 @@ func New(appName string, verbose bool, cfg Config, db db.DB, dbc *pg.DB) *App {
 
 	a.SetStdLoggers(verbose)
 
+	a.gs = githubService.NewGithubService(gitHubOwner, gitHubRepoName)
 	a.bs = botService.NewBotService(a.Logger, a.db)
+	a.cs = cronService.NewCronService(a.bs, a.gs)
 
 	opts := []bot.Option{bot.WithDefaultHandler(a.bs.DefaultHandler)}
 	b, err := bot.New(cfg.Bot.Token, opts...)
@@ -69,6 +79,9 @@ func (a *App) Run() error {
 
 	a.bs.RegisterBotHandlers(a.b)
 
+	a.cs.RegisterTasks()
+	a.cs.Start()
+
 	// for local usage
 	if a.isDevel {
 		go a.b.Start(context.TODO())
@@ -76,7 +89,7 @@ func (a *App) Run() error {
 	}
 
 	// for server usage
-	
+
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 	_, err := a.b.SetWebhook(ctx, &bot.SetWebhookParams{
@@ -95,6 +108,6 @@ func (a *App) Shutdown(timeout time.Duration) {
 	defer cancel()
 
 	if _, err := a.b.Close(ctx); err != nil {
-		a.Errorf("shutting down bot err=%q", err)
+		a.Errorf("shutting down ludomania err=%q", err)
 	}
 }
