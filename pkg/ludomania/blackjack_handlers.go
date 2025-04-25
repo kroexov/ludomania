@@ -189,6 +189,7 @@ func (bs *BotService) renderGameState(ctx context.Context, b *bot.Bot, inlineMsg
 			},
 		}
 		if user, _ := bs.cr.LudomanByID(ctx, userID); user.Balance >= game.Bet*100000 && len(game.PlayerHand) < 20 {
+			fmt.Println("DOUBLE")
 			buttons[0] = append(buttons[0], models.InlineKeyboardButton{
 				Text:         "Удвоить",
 				CallbackData: fmt.Sprintf("bjAct_double_%d", userID),
@@ -238,7 +239,7 @@ func (bs *BotService) handleBlackjackAction(ctx context.Context, b *bot.Bot, upd
 		game.IsCompleted = true
 
 	case "double":
-		if user, _ := bs.cr.LudomanByID(ctx, game.UserID); user.Balance >= game.Bet*100000 && len(game.PlayerHand) == 2 {
+		if user, _ := bs.cr.LudomanByID(ctx, game.UserID); user.Balance >= game.Bet*100000 && len(game.PlayerHand) < 20 {
 			time.Sleep(3 * time.Second)
 			game.IsDoubled = true
 			deck := strings.Split(game.Deck, " ")
