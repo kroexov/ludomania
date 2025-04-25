@@ -188,8 +188,7 @@ func (bs *BotService) renderGameState(ctx context.Context, b *bot.Bot, inlineMsg
 				{Text: "Стоп", CallbackData: fmt.Sprintf("bjAct_stand_%d", userID)},
 			},
 		}
-		if user, _ := bs.cr.LudomanByID(ctx, userID); user.Balance >= game.Bet*100000 && len(game.PlayerHand) < 20 {
-			fmt.Println("DOUBLE")
+		if user, _ := bs.cr.LudomanByID(ctx, userID); user.Balance >= game.Bet*100000 && len(game.PlayerHand) < 18 {
 			buttons[0] = append(buttons[0], models.InlineKeyboardButton{
 				Text:         "Удвоить",
 				CallbackData: fmt.Sprintf("bjAct_double_%d", userID),
@@ -239,7 +238,7 @@ func (bs *BotService) handleBlackjackAction(ctx context.Context, b *bot.Bot, upd
 		game.IsCompleted = true
 
 	case "double":
-		if user, _ := bs.cr.LudomanByID(ctx, game.UserID); user.Balance >= game.Bet*100000 && len(game.PlayerHand) < 20 {
+		if user, _ := bs.cr.LudomanByID(ctx, game.UserID); user.Balance >= game.Bet*100000 && len(game.PlayerHand) < 18 {
 			time.Sleep(3 * time.Second)
 			game.IsDoubled = true
 			deck := strings.Split(game.Deck, " ")
@@ -281,7 +280,7 @@ func (bs *BotService) finalizeGame(ctx context.Context, b *bot.Bot, inlineMsgID 
 	defaultImage := "https://ibb.co/SDxYjTgD"
 
 	switch {
-	case playerValue == 21 && len(game.PlayerHand) < 20:
+	case playerValue == 21 && len(game.PlayerHand) < 18:
 		result = "БЛЕКДЖЕК! Поздравляем, выплата 3:2 !"
 		resultImage = "https://ibb.co/Vc0WKybS" // Игрок выиграл
 		bs.updateBalance(game.Bet*250000*multiplier, []int{userID}, false)
