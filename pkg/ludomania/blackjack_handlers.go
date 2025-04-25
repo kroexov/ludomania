@@ -212,7 +212,10 @@ func (bs *BotService) renderGameState(ctx context.Context, b *bot.Bot, inlineMsg
 
 func (bs *BotService) handleBlackjackAction(ctx context.Context, b *bot.Bot, update *models.Update, userID int, parts []string) {
 	action := parts[1]
-	gameInterface, _ := bs.blackjackGames.Load(userID)
+	gameInterface, ok := bs.blackjackGames.Load(userID)
+	if !ok {
+		return
+	}
 	game := gameInterface.(*BlackjackGame)
 
 	fmt.Println("hand size == ", game.PlayerHand)

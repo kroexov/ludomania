@@ -273,8 +273,10 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 					}},
 				&models.InlineQueryResultGif{
 					ID:                "6",
-					GifURL:            "https://img2.vombat.su/images/post/big/2024/09/12/17261016664048.gif?class=max",
-					ThumbnailURL:      "https://img2.vombat.su/images/post/big/2024/09/12/17261016664048.gif?class=max",
+					Title:             "Реклама!",
+					Caption:           "Реклама!",
+					GifURL:            "https://media.tenor.com/QttOudwaS4kAAAAM/ohhp.gif",
+					ThumbnailURL:      "https://media.tenor.com/QttOudwaS4kAAAAM/ohhp.gif",
 					ThumbnailMimeType: "image/gif",
 					InputMessageContent: &models.InputTextMessageContent{
 						MessageText: `Рекламная интеграция\!
