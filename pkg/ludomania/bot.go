@@ -94,6 +94,7 @@ type BotService struct {
 	limitByBack  int
 	papikyanLock map[int]struct{}
 
+	lastClick      sync.Map
 	blackjackGames *sync.Map
 }
 
@@ -659,6 +660,7 @@ func (bs *BotService) PlayersRatingHandler(ctx context.Context, b *bot.Bot, upda
 }
 
 func (bs *BotService) BuyBackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	fmt.Println("parts === ", update.CallbackQuery.Data)
 	parts := strings.Split(update.CallbackQuery.Data, "_")
 	if len(parts) < 2 {
 		bs.Errorf("len(parts) < 2")

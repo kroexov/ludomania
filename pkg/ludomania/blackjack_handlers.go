@@ -109,8 +109,9 @@ func (bs *BotService) handleBlackjackBet(ctx context.Context, b *bot.Bot, update
 
 	betAmount := bet * 100000
 
-	if user.Balance < betAmount {
-		bs.respondToCallback(ctx, b, update.CallbackQuery.ID, "Недостаточно средств!")
+	if user.Balance < 100000 {
+		fmt.Println(parts)
+		bs.lossHandler(ctx, b, update, parts[2])
 		return
 	}
 
@@ -160,6 +161,7 @@ func drawCards(deck *[]string, n int) string {
 }
 
 func (bs *BotService) renderGameState(ctx context.Context, b *bot.Bot, inlineMsgID string, userID int, game *BlackjackGame, showDealer bool) {
+
 	playerValue := calculateHandValue(game.PlayerHand)
 
 	dealerHand := "?"
@@ -211,6 +213,16 @@ func (bs *BotService) renderGameState(ctx context.Context, b *bot.Bot, inlineMsg
 }
 
 func (bs *BotService) handleBlackjackAction(ctx context.Context, b *bot.Bot, update *models.Update, userID int, parts []string) {
+	now := time.Now()
+	if v, ok := bs.lastClick.Load(userID); ok && now.Sub(v.(time.Time)) < 5*time.Second {
+		b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+			CallbackQueryID: update.CallbackQuery.ID,
+			Text:            "Секундочку…",
+			ShowAlert:       false,
+		})
+		return
+	}
+	bs.lastClick.Store(userID, now)
 	action := parts[1]
 	gameInterface, ok := bs.blackjackGames.Load(userID)
 	if !ok {
