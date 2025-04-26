@@ -4,9 +4,18 @@
 //lint:file-ignore U1000 ignore unused code, it's generated
 package db
 
+import (
+	"time"
+)
+
 var Columns = struct {
 	Ludoman struct {
 		ID, LudomanNickname, TgID, Balance, Losses, TotalLost, TotalWon string
+	}
+	Transaction struct {
+		ID, FromLudomanID, ToLudomanID, Amount, CreatedAt string
+
+		FromLudoman, ToLudoman string
 	}
 }{
 	Ludoman: struct {
@@ -20,10 +29,27 @@ var Columns = struct {
 		TotalLost:       "totalLost",
 		TotalWon:        "totalWon",
 	},
+	Transaction: struct {
+		ID, FromLudomanID, ToLudomanID, Amount, CreatedAt string
+
+		FromLudoman, ToLudoman string
+	}{
+		ID:            "transactionId",
+		FromLudomanID: "fromLudomanId",
+		ToLudomanID:   "toLudomanId",
+		Amount:        "amount",
+		CreatedAt:     "createdAt",
+
+		FromLudoman: "FromLudoman",
+		ToLudoman:   "ToLudoman",
+	},
 }
 
 var Tables = struct {
 	Ludoman struct {
+		Name, Alias string
+	}
+	Transaction struct {
 		Name, Alias string
 	}
 }{
@@ -31,6 +57,12 @@ var Tables = struct {
 		Name, Alias string
 	}{
 		Name:  "ludomans",
+		Alias: "t",
+	},
+	Transaction: struct {
+		Name, Alias string
+	}{
+		Name:  "transactions",
 		Alias: "t",
 	},
 }
@@ -45,4 +77,17 @@ type Ludoman struct {
 	Losses          int    `pg:"losses,use_zero"`
 	TotalLost       *int   `pg:"totalLost"`
 	TotalWon        *int   `pg:"totalWon"`
+}
+
+type Transaction struct {
+	tableName struct{} `pg:"transactions,alias:t,discard_unknown_columns"`
+
+	ID            int       `pg:"transactionId,pk"`
+	FromLudomanID int       `pg:"fromLudomanId,use_zero"`
+	ToLudomanID   int       `pg:"toLudomanId,use_zero"`
+	Amount        int       `pg:"amount,use_zero"`
+	CreatedAt     time.Time `pg:"createdAt,use_zero"`
+
+	FromLudoman *Ludoman `pg:"fk:fromLudomanId,rel:has-one"`
+	ToLudoman   *Ludoman `pg:"fk:toLudomanId,rel:has-one"`
 }
