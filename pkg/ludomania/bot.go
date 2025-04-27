@@ -107,6 +107,7 @@ func NewBotService(logger embedlog.Logger, dbo db.DB) *BotService {
 }
 
 func (bs *BotService) RegisterBotHandlers(b *bot.Bot) {
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/play", bot.MatchTypePrefix, bs.PlayHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternPapikSlots, bot.MatchTypePrefix, bs.PapikRouletteHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternMayatinRoulette, bot.MatchTypePrefix, bs.MayatinRouletteHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternMayatinRouletteBet, bot.MatchTypePrefix, bs.MayatinRouletteBetHandler)
@@ -519,6 +520,8 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 }
 
 func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	params := baseEditMsgParams(update)
+
 	parts := strings.Split(update.CallbackQuery.Data, "_")
 	if len(parts) < 3 {
 		bs.Errorf("len(parts) < 3")
@@ -575,15 +578,18 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 	bs.papikyanLock[user.ID] = struct{}{}
 	defer delete(bs.papikyanLock, user.ID)
 
-	b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
-		InlineMessageID: update.CallbackQuery.InlineMessageID,
-		Media: &models.InputMediaVideo{
-			Media:     "https://media.tenor.com/_yoDqyYP8aYAAAAM/casino77-slot-machine.gif",
-			Caption:   "Крутимся...",
-			ParseMode: models.ParseModeHTML,
-			//HasSpoiler: true,
-		},
-	})
+	params.Media = &models.InputMediaVideo{
+		Media:     "https://media.tenor.com/_yoDqyYP8aYAAAAM/casino77-slot-machine.gif",
+		Caption:   "Крутимся...",
+		ParseMode: models.ParseModeHTML,
+		//HasSpoiler: true,
+	}
+
+	_, err = b.EditMessageMedia(ctx, params)
+	if err != nil {
+		bs.Errorf("%v", err)
+		return
+	}
 
 	time.Sleep(5 * time.Second)
 
@@ -628,35 +634,34 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 		pic = jackPotPapikyan
 	}
 
-	_, err = b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
-		InlineMessageID: update.CallbackQuery.InlineMessageID,
-		Media: &models.InputMediaPhoto{
-			Media:     pic,
-			Caption:   res,
-			ParseMode: models.ParseModeHTML,
-			//HasSpoiler: true,
+	params.Media = &models.InputMediaPhoto{
+		Media:     pic,
+		Caption:   res,
+		ParseMode: models.ParseModeHTML,
+		//HasSpoiler: true,
+	}
+	params.ReplyMarkup = models.InlineKeyboardMarkup{InlineKeyboard: [][]models.InlineKeyboardButton{
+		{
+			models.InlineKeyboardButton{
+				Text:         "Сыграть на 100k",
+				CallbackData: patternPapikSlots + "_" + parts[1] + "_1",
+			},
 		},
-		ReplyMarkup: models.InlineKeyboardMarkup{InlineKeyboard: [][]models.InlineKeyboardButton{
-			{
-				models.InlineKeyboardButton{
-					Text:         "Сыграть на 100k",
-					CallbackData: patternPapikSlots + "_" + parts[1] + "_1",
-				},
+		{
+			models.InlineKeyboardButton{
+				Text:         "Сыграть на 500k",
+				CallbackData: patternPapikSlots + "_" + parts[1] + "_5",
 			},
-			{
-				models.InlineKeyboardButton{
-					Text:         "Сыграть на 500k",
-					CallbackData: patternPapikSlots + "_" + parts[1] + "_5",
-				},
+		},
+		{
+			models.InlineKeyboardButton{
+				Text:         "Сыграть на 1m",
+				CallbackData: patternPapikSlots + "_" + parts[1] + "_10",
 			},
-			{
-				models.InlineKeyboardButton{
-					Text:         "Сыграть на 1m",
-					CallbackData: patternPapikSlots + "_" + parts[1] + "_10",
-				},
-			},
-		}},
-	})
+		},
+	}}
+
+	_, err = b.EditMessageMedia(ctx, params)
 
 	if err != nil {
 		if !strings.Contains(err.Error(), "cannot unmarshal bool") {
@@ -673,56 +678,70 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 			time.Sleep(time.Duration(retryTime) * time.Second)
 			errorMsg := fmt.Sprintf("Извините, бот задерживается из-за перегруза запросов.\nЗадержка:%ds", retryTime)
 
-			b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
-				InlineMessageID: update.CallbackQuery.InlineMessageID,
-				Media: &models.InputMediaPhoto{
-					Media:     pic,
-					Caption:   res + "\n" + errorMsg,
-					ParseMode: models.ParseModeHTML,
-					//HasSpoiler: true,
+			params.Media = &models.InputMediaPhoto{
+				Media:     pic,
+				Caption:   res + "\n" + errorMsg,
+				ParseMode: models.ParseModeHTML,
+				//HasSpoiler: true,
+			}
+
+			params.ReplyMarkup = models.InlineKeyboardMarkup{InlineKeyboard: [][]models.InlineKeyboardButton{
+				{
+					models.InlineKeyboardButton{
+						Text:         "Сыграть на 100k",
+						CallbackData: patternPapikSlots + "_" + parts[1] + "_1",
+					},
 				},
-				ReplyMarkup: models.InlineKeyboardMarkup{InlineKeyboard: [][]models.InlineKeyboardButton{
-					{
-						models.InlineKeyboardButton{
-							Text:         "Сыграть на 100k",
-							CallbackData: patternPapikSlots + "_" + parts[1] + "_1",
-						},
+				{
+					models.InlineKeyboardButton{
+						Text:         "Сыграть на 500k",
+						CallbackData: patternPapikSlots + "_" + parts[1] + "_5",
 					},
-					{
-						models.InlineKeyboardButton{
-							Text:         "Сыграть на 500k",
-							CallbackData: patternPapikSlots + "_" + parts[1] + "_5",
-						},
+				},
+				{
+					models.InlineKeyboardButton{
+						Text:         "Сыграть на 1m",
+						CallbackData: patternPapikSlots + "_" + parts[1] + "_10",
 					},
-					{
-						models.InlineKeyboardButton{
-							Text:         "Сыграть на 1m",
-							CallbackData: patternPapikSlots + "_" + parts[1] + "_10",
-						},
-					},
-				}},
-			})
+				},
+			}}
+			b.EditMessageMedia(ctx, params)
 		}
 	}
 }
+
+func baseEditMsgParams(update *models.Update) *bot.EditMessageMediaParams {
+	params := &bot.EditMessageMediaParams{}
+
+	if update.CallbackQuery.InlineMessageID != "" {
+		params.InlineMessageID = update.CallbackQuery.InlineMessageID
+	} else if update.CallbackQuery.Message.Message != nil {
+		params.ChatID = update.CallbackQuery.Message.Message.Chat.ID
+		params.MessageID = update.CallbackQuery.Message.Message.ID
+	}
+	return params
+}
+
 func (bs *BotService) lossHandler(ctx context.Context, b *bot.Bot, update *models.Update, userId string) {
-	b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
-		InlineMessageID: update.CallbackQuery.InlineMessageID,
-		Media: &models.InputMediaVideo{
-			Media:     "https://media.tenor.com/aSkdq3IU0g0AAAAM/laughing-cat.gif",
-			Caption:   "Вы израходовали свой баланс!",
-			ParseMode: models.ParseModeHTML,
-			//HasSpoiler: true,
-		},
-		ReplyMarkup: models.InlineKeyboardMarkup{InlineKeyboard: [][]models.InlineKeyboardButton{
-			{
-				models.InlineKeyboardButton{
-					Text:         "Хочу откупиться!",
-					CallbackData: patternBuyBack + "_" + userId,
-				},
+	params := baseEditMsgParams(update)
+
+	params.Media = &models.InputMediaVideo{
+		Media:     "https://media.tenor.com/aSkdq3IU0g0AAAAM/laughing-cat.gif",
+		Caption:   "Вы израходовали свой баланс!",
+		ParseMode: models.ParseModeHTML,
+		//HasSpoiler: true,
+	}
+
+	params.ReplyMarkup = models.InlineKeyboardMarkup{InlineKeyboard: [][]models.InlineKeyboardButton{
+		{
+			models.InlineKeyboardButton{
+				Text:         "Хочу откупиться!",
+				CallbackData: patternBuyBack + "_" + userId,
 			},
-		}},
-	})
+		},
+	}}
+
+	b.EditMessageMedia(ctx, params)
 }
 
 func (bs *BotService) BuybackHouseHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -1224,4 +1243,43 @@ func (bs *BotService) updateBalance(sum int, ids []int, balanceOnly bool) error 
 
 	_, err := bs.db.Exec(query, sum, pg.In(ids), balanceOnly)
 	return err
+}
+
+func (bs *BotService) PlayHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	tgId := int(update.Message.From.ID)
+	user, err := bs.cr.OneLudoman(ctx, &db.LudomanSearch{TgID: &tgId})
+	if err != nil {
+		bs.Errorf("%v", err)
+		return
+	}
+	_, err = b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID:          update.Message.Chat.ID,
+		MessageThreadID: update.Message.MessageThreadID,
+		Text:            "Выберите игру",
+		ReplyMarkup: models.InlineKeyboardMarkup{
+			InlineKeyboard: [][]models.InlineKeyboardButton{
+				{
+					models.InlineKeyboardButton{
+						Text:         "Слоты Папикяна",
+						CallbackData: patternPapikSlots + "_" + strconv.Itoa(user.ID) + "_1",
+					},
+				},
+				{
+					models.InlineKeyboardButton{
+						Text:         "Рулетка Маятина",
+						CallbackData: patternMayatinRoulette + "_" + strconv.Itoa(user.ID),
+					},
+				},
+				{
+					models.InlineKeyboardButton{
+						Text:         "Экзамен Повышева",
+						CallbackData: patternPovyshevExams + "_" + strconv.Itoa(user.ID),
+					},
+				},
+			}},
+	})
+	if err != nil {
+		bs.Errorf("%v", err)
+		return
+	}
 }
