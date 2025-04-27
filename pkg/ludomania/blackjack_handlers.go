@@ -248,7 +248,7 @@ func (bs *BotService) renderGameState(ctx context.Context, b *bot.Bot, inlineMsg
 		}
 	}
 
-	b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
+	_, err := b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
 		InlineMessageID: inlineMsgID,
 		Media: &models.InputMediaDocument{
 			Media:     blackJackFillerGIFs[rand.Intn(len(blackJackFillerGIFs))],
@@ -257,10 +257,13 @@ func (bs *BotService) renderGameState(ctx context.Context, b *bot.Bot, inlineMsg
 			//HasSpoiler: true,
 		},
 	})
+	if err != nil {
+		bs.Errorf("%v", err)
+	}
 
 	time.Sleep(5 * time.Second)
 
-	_, err := b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
+	_, err = b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
 		InlineMessageID: inlineMsgID,
 		Media: &models.InputMediaPhoto{
 			Media:     "https://ibb.co/SDxYjTgD",
@@ -291,7 +294,7 @@ func (bs *BotService) handleBlackjackAction(ctx context.Context, b *bot.Bot, upd
 		return
 	}
 	game := gameInterface.(*BlackjackGame)
-	b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
+	_, err := b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
 		InlineMessageID: update.CallbackQuery.InlineMessageID,
 		Media: &models.InputMediaDocument{
 			Media:     blackJackFillerGIFs[rand.Intn(len(blackJackFillerGIFs))],
@@ -300,6 +303,9 @@ func (bs *BotService) handleBlackjackAction(ctx context.Context, b *bot.Bot, upd
 			//HasSpoiler: true,
 		},
 	})
+	if err != nil {
+		bs.Errorf("%v", err)
+	}
 	time.Sleep(5 * time.Second)
 	switch action {
 	case "hit":
