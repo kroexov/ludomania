@@ -24,11 +24,18 @@ var (
 )
 
 var blackJackFillerGIFs = []string{
-	"CgACAgIAAxkBAAIY-WgOMJ6YTFw8jDAcsLrp3xd89d1aAAJRcwACTvV4SILzJVWuqQGsNgQ",
-	"CgACAgIAAxkBAAIY-mgOMKGrA4ppSc6lOf4c5exC8eWNAAJScwACTvV4SLQx4d7C6OD_NgQ",
-	"CgACAgIAAxkBAAIY-2gOMKNgH6Pdr7KqCb-10Vf8f_aXAAJTcwACTvV4SJSezIIgI--HNgQ",
-	"CgACAgIAAxkBAAIY_GgOMKXNgTfDyIQhgzASBJ5H_OphAAJVcwACTvV4SDZpqKKXKht_NgQ",
-	"CgACAgIAAxkBAAIY_WgOMKfSVNAcg1W1hzdILEenrRkfAAJWcwACTvV4SH7wA1kYGzKbNgQ",
+	// debug cash for FinanseeBot
+	//"CgACAgIAAxkBAAIY-WgOMJ6YTFw8jDAcsLrp3xd89d1aAAJRcwACTvV4SILzJVWuqQGsNgQ",
+	//"CgACAgIAAxkBAAIY-mgOMKGrA4ppSc6lOf4c5exC8eWNAAJScwACTvV4SLQx4d7C6OD_NgQ",
+	//"CgACAgIAAxkBAAIY-2gOMKNgH6Pdr7KqCb-10Vf8f_aXAAJTcwACTvV4SJSezIIgI--HNgQ",
+	//"CgACAgIAAxkBAAIY_GgOMKXNgTfDyIQhgzASBJ5H_OphAAJVcwACTvV4SDZpqKKXKht_NgQ",
+	//"CgACAgIAAxkBAAIY_WgOMKfSVNAcg1W1hzdILEenrRkfAAJWcwACTvV4SH7wA1kYGzKbNgQ",
+
+	"CgACAgIAAxkBAANgaA6Q1DxgUb-XVQ4nP1KH7hyxhf8AAjB0AAKfW3lIb5yY_rMcRo02BA",
+	"CgACAgIAAxkBAANhaA6Q1poODXOpUYlceMnLprBMnJcAAjF0AAKfW3lIFNWY28gKu9w2BA",
+	"CgACAgIAAxkBAANiaA6Q2H9Jommhg0FsPr264MW81vcAAjJ0AAKfW3lI1VkvDAQ5b_M2BA",
+	"CgACAgIAAxkBAANjaA6Q2zWFjXT3i_QtW99X4FiZ5Q0AAjN0AAKfW3lIxU9rpLybCvg2BA",
+	"CgACAgIAAxkBAANkaA6Q3VhUsPcXhvFvjfKW8sTHz4IAAjR0AAKfW3lIz_4pT9JMm6Q2BA",
 }
 
 type BlackjackGame struct {
@@ -248,19 +255,22 @@ func (bs *BotService) renderGameState(ctx context.Context, b *bot.Bot, inlineMsg
 		}
 	}
 
-	b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
+	_, err := b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
 		InlineMessageID: inlineMsgID,
-		Media: &models.InputMediaDocument{
+		Media: &models.InputMediaAnimation{
 			Media:     blackJackFillerGIFs[rand.Intn(len(blackJackFillerGIFs))],
 			Caption:   "Раскидываем картонки...",
 			ParseMode: models.ParseModeHTML,
 			//HasSpoiler: true,
 		},
 	})
+	if err != nil {
+		bs.Errorf("%v", err)
+	}
 
 	time.Sleep(5 * time.Second)
 
-	_, err := b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
+	_, err = b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
 		InlineMessageID: inlineMsgID,
 		Media: &models.InputMediaPhoto{
 			Media:     "https://ibb.co/SDxYjTgD",
@@ -291,15 +301,18 @@ func (bs *BotService) handleBlackjackAction(ctx context.Context, b *bot.Bot, upd
 		return
 	}
 	game := gameInterface.(*BlackjackGame)
-	b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
+	_, err := b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
 		InlineMessageID: update.CallbackQuery.InlineMessageID,
-		Media: &models.InputMediaDocument{
+		Media: &models.InputMediaAnimation{
 			Media:     blackJackFillerGIFs[rand.Intn(len(blackJackFillerGIFs))],
 			Caption:   "Раскидываем картонки...",
 			ParseMode: models.ParseModeHTML,
 			//HasSpoiler: true,
 		},
 	})
+	if err != nil {
+		bs.Errorf("%v", err)
+	}
 	time.Sleep(5 * time.Second)
 	switch action {
 	case "hit":
