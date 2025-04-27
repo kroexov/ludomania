@@ -40,7 +40,6 @@ type BlackjackGame struct {
 	IsDoubled   bool
 	IsCompleted bool
 
-	//надо добавить обработку
 	mu sync.Mutex
 }
 
@@ -59,7 +58,7 @@ func (bs *BotService) BlackjackHandler(ctx context.Context, b *bot.Bot, update *
 	} else {
 		userID, _ = strconv.Atoi(parts[1])
 	}
-	//userID, _ := strconv.Atoi(parts[1])
+
 	if userID == -1 {
 		bs.Errorf("invalid blackjack data: %s", update.CallbackQuery.Data)
 		return
@@ -115,8 +114,10 @@ func (bs *BotService) handleBlackjackStart(ctx context.Context, b *bot.Bot, upda
 }
 
 func (bs *BotService) handleBlackjackBet(ctx context.Context, b *bot.Bot, update *models.Update, userID int, parts []string) {
-	bet, _ := strconv.Atoi(parts[1])
-	//userID, _ := strconv.Atoi(parts[2])
+	bet, err := strconv.Atoi(parts[1])
+	if err != nil {
+		bs.Errorf("Error getting bet: %v", err)
+	}
 	user, err := bs.cr.LudomanByID(ctx, userID)
 	if err != nil {
 		bs.Errorf("Error getting user: %v", err)
@@ -290,9 +291,6 @@ func (bs *BotService) handleBlackjackAction(ctx context.Context, b *bot.Bot, upd
 		return
 	}
 	game := gameInterface.(*BlackjackGame)
-
-	//fmt.Println("hand size == ", game.PlayerHand)
-	//fmt.Println("hand size == ", len(game.PlayerHand))
 	time.Sleep(5 * time.Second)
 	b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
 		InlineMessageID: update.CallbackQuery.InlineMessageID,
@@ -392,7 +390,10 @@ func (bs *BotService) finalizeGame(ctx context.Context, b *bot.Bot, inlineMsgID 
 		resultImage = defaultImage
 	}
 
-	user, _ := bs.cr.LudomanByID(ctx, userID)
+	user, err := bs.cr.LudomanByID(ctx, userID)
+	if err != nil {
+		bs.Errorf("Error getting user: %v", err)
+	}
 	caption := fmt.Sprintf("%s\nВаши карты: %s (%d)\nКарты дилера: %s (%d)\nБаланс: %s",
 		result,
 		formatHand(game.PlayerHand),
@@ -410,7 +411,7 @@ func (bs *BotService) finalizeGame(ctx context.Context, b *bot.Bot, inlineMsgID 
 		},
 	}
 
-	_, err := b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
+	_, err = b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
 		InlineMessageID: inlineMsgID,
 		Media: &models.InputMediaPhoto{
 			Media:     resultImage,
