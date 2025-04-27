@@ -56,7 +56,19 @@ func (bs *BotService) BlackjackHandler(ctx context.Context, b *bot.Bot, update *
 		bs.Errorf("invalid blackjack data: %s", update.CallbackQuery.Data)
 		return
 	}
-	fmt.Println("id юзера == ", userID)
+
+	user, err := bs.cr.LudomanByID(ctx, userID)
+	if err != nil {
+		bs.Errorf("%v", err)
+	}
+	if user.LudomanNickname != update.CallbackQuery.From.Username {
+		_, err = b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+			CallbackQueryID: update.CallbackQuery.ID,
+			Text:            "Это не ваш автомат! Нажмите на название бота и тоже сможете сыграть :)",
+			ShowAlert:       true,
+		})
+		return
+	}
 
 	switch {
 	case action == patternBlackjack:
@@ -84,7 +96,7 @@ func (bs *BotService) handleBlackjackStart(ctx context.Context, b *bot.Bot, upda
 		InlineMessageID: update.CallbackQuery.InlineMessageID,
 		Media: &models.InputMediaPhoto{
 			Media:     "https://ibb.co/SDxYjTgD",
-			Caption:   "Выберите ставку для Блекджека с Даней Казанцевым!",
+			Caption:   "Выберите ставку для Блекджека с Даней Казанцевым! \nЦель игры: набрать сумму карт ближе к 21, чем дилер, не превышая 21.\n\nЗначения карт:\n\n2–10: номинал карты\n\nJ, Q, K: 10\n\nA: 1 или 11\n\nДействия игрока:\n\nВзять: получить ещё одну карту\n\nСтоп: завершить набор карт\n\nУдвоить: удвоить ставку и получить одну карту",
 			ParseMode: models.ParseModeHTML,
 		},
 		ReplyMarkup: markup,
@@ -114,8 +126,6 @@ func (bs *BotService) handleBlackjackBet(ctx context.Context, b *bot.Bot, update
 	}
 
 	if user.Balance < betAmount {
-		//fmt.Println(parts)
-		//bs.lossHandler(ctx, b, update, parts[2])
 		bs.respondToCallback(ctx, b, update.CallbackQuery.ID, "Недостаточно средств для этой ставки !")
 		return
 	}
@@ -167,40 +177,50 @@ func drawCards(deck *[]string, n int) string {
 
 func (bs *BotService) renderGameState(ctx context.Context, b *bot.Bot, inlineMsgID string, userID int, game *BlackjackGame, showDealer bool) {
 
-	playerValue, _ := calculateHandValue(game.PlayerHand)
+	playerValue, soft := calculateHandValue(game.PlayerHand)
 
-	dealerHand := "?"
+	var dealerHand string
+	var dealerValuePart string
+
 	if !showDealer {
 		cards := strings.Split(game.DealerHand, " ")
 		if len(cards) > 0 {
-			dealerHand = formatCard(cards[0]) + " ?"
+			firstCard := cards[0]
+			dealerHand = formatCard(firstCard)
+			firstValue, _ := calculateHandValue(firstCard)
+			dealerValuePart = fmt.Sprintf(" (%d)", firstValue)
+		} else {
+			dealerHand = "?"
+			dealerValuePart = ""
 		}
 	} else {
 		dealerHand = formatHand(game.DealerHand)
+		fullValue, _ := calculateHandValue(game.DealerHand)
+		dealerValuePart = fmt.Sprintf(" (%d)", fullValue)
 	}
-
-	fmt.Println("game.PlayerHand", game.PlayerHand)
 
 	var caption string
 
-	_, soft := calculateHandValue(game.PlayerHand)
 	if strings.Contains(game.PlayerHand, "A") && soft {
-		caption = fmt.Sprintf("Ваши карты: %s (%d \\ %d )\nДилер: %s",
+		caption = fmt.Sprintf(
+			"Ваши карты: %s (%d\\%d)\nДилер: %s%s",
 			formatHand(game.PlayerHand),
 			playerValue,
 			playerValue-10,
 			dealerHand,
+			dealerValuePart,
 		)
 	} else {
-		caption = fmt.Sprintf("Ваши карты: %s (%d)\nДилер: %s",
+		caption = fmt.Sprintf(
+			"Ваши карты: %s (%d)\nДилер: %s%s",
 			formatHand(game.PlayerHand),
 			playerValue,
 			dealerHand,
+			dealerValuePart,
 		)
 	}
 
-	value, _ := calculateHandValue(game.PlayerHand)
-	if value >= 21 {
+	if playerValue >= 21 {
 		game.IsCompleted = true
 	}
 	var buttons [][]models.InlineKeyboardButton
@@ -250,9 +270,6 @@ func (bs *BotService) handleBlackjackAction(ctx context.Context, b *bot.Bot, upd
 		return
 	}
 	game := gameInterface.(*BlackjackGame)
-
-	//fmt.Println("hand size == ", game.PlayerHand)
-	//fmt.Println("hand size == ", len(game.PlayerHand))
 
 	switch action {
 	case "hit":
@@ -421,7 +438,6 @@ func calculateHandValue(hand string) (value int, soft bool) {
 }
 
 func formatHand(hand string) string {
-	//fmt.Println("formatHand == ", hand)
 	cards := strings.Split(hand, " ")
 	var formatted []string
 	for _, card := range cards {
