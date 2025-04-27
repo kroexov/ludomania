@@ -23,6 +23,14 @@ var (
 	ranks = []string{"2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"}
 )
 
+var blackJackFillerGIFs = []string{
+	"CgACAgIAAxkBAAIY-WgOMJ6YTFw8jDAcsLrp3xd89d1aAAJRcwACTvV4SILzJVWuqQGsNgQ",
+	"CgACAgIAAxkBAAIY-mgOMKGrA4ppSc6lOf4c5exC8eWNAAJScwACTvV4SLQx4d7C6OD_NgQ",
+	"CgACAgIAAxkBAAIY-2gOMKNgH6Pdr7KqCb-10Vf8f_aXAAJTcwACTvV4SJSezIIgI--HNgQ",
+	"CgACAgIAAxkBAAIY_GgOMKXNgTfDyIQhgzASBJ5H_OphAAJVcwACTvV4SDZpqKKXKht_NgQ",
+	"CgACAgIAAxkBAAIY_WgOMKfSVNAcg1W1hzdILEenrRkfAAJWcwACTvV4SH7wA1kYGzKbNgQ",
+}
+
 type BlackjackGame struct {
 	UserID      int
 	PlayerHand  string
@@ -219,6 +227,18 @@ func (bs *BotService) renderGameState(ctx context.Context, b *bot.Bot, inlineMsg
 		}
 	}
 
+	b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
+		InlineMessageID: inlineMsgID,
+		Media: &models.InputMediaDocument{
+			Media:     blackJackFillerGIFs[rand.Intn(len(blackJackFillerGIFs))],
+			Caption:   "Раскидываем картонки...",
+			ParseMode: models.ParseModeHTML,
+			//HasSpoiler: true,
+		},
+	})
+
+	time.Sleep(5 * time.Second)
+
 	_, err := b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
 		InlineMessageID: inlineMsgID,
 		Media: &models.InputMediaPhoto{
@@ -254,9 +274,20 @@ func (bs *BotService) handleBlackjackAction(ctx context.Context, b *bot.Bot, upd
 	//fmt.Println("hand size == ", game.PlayerHand)
 	//fmt.Println("hand size == ", len(game.PlayerHand))
 
+	b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
+		InlineMessageID: update.CallbackQuery.InlineMessageID,
+		Media: &models.InputMediaDocument{
+			Media:     blackJackFillerGIFs[rand.Intn(len(blackJackFillerGIFs))],
+			Caption:   "Раскидываем картонки...",
+			ParseMode: models.ParseModeHTML,
+			//HasSpoiler: true,
+		},
+	})
+
+	time.Sleep(5 * time.Second)
+
 	switch action {
 	case "hit":
-		time.Sleep(3 * time.Second)
 		deck := strings.Split(game.Deck, " ")
 		if len(deck) == 0 {
 			bs.Errorf("Deck is empty")
@@ -272,12 +303,10 @@ func (bs *BotService) handleBlackjackAction(ctx context.Context, b *bot.Bot, upd
 		}
 
 	case "stand":
-		time.Sleep(3 * time.Second)
 		game.IsCompleted = true
 
 	case "double":
 		if user, _ := bs.cr.LudomanByID(ctx, game.UserID); user.Balance >= game.Bet*100000 && len(game.PlayerHand) < 18 {
-			time.Sleep(3 * time.Second)
 			game.IsDoubled = true
 			deck := strings.Split(game.Deck, " ")
 			newCard := deck[0]
