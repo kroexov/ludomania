@@ -293,7 +293,7 @@ func (bs *BotService) handleBlackjackAction(ctx context.Context, b *bot.Bot, upd
 
 	//fmt.Println("hand size == ", game.PlayerHand)
 	//fmt.Println("hand size == ", len(game.PlayerHand))
-
+	time.Sleep(5 * time.Second)
 	b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
 		InlineMessageID: update.CallbackQuery.InlineMessageID,
 		Media: &models.InputMediaDocument{
@@ -303,9 +303,6 @@ func (bs *BotService) handleBlackjackAction(ctx context.Context, b *bot.Bot, upd
 			//HasSpoiler: true,
 		},
 	})
-
-	time.Sleep(5 * time.Second)
-
 	switch action {
 	case "hit":
 		deck := strings.Split(game.Deck, " ")
