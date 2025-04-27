@@ -49,6 +49,16 @@ var slotsResults = [7]string{
 	"https://i.ibb.co/rRBVsQJC/photo-2025-03-21-18-45-27.jpg",
 }
 
+var marketingSlots = []string{
+	`||Лучший мини апп [полка](https://t.me/polkabot_news) зарелизился и ждет клиентов\. Будьте первыми\!||`,
+	`||Выберите себе фильм или сериал посмотреть с [PopcornBro](https://t.me/PopcornBroBot)\!
+Алгоритм подстроится под ваши желания и посоветует самые лушие опции\!||`,
+	`||Узнайте свой грейд с @tvoy\_grade\_bot \!
+Просто введите название бота в чате и лудоманьте свою зарплату\!
+В качестве бонуса вы получите возможность накрутить себе песню undefined\!||`,
+	`||Эй\, джун\, а ты уже улучшил своё резюме с [resumeup](https://resumeup.ru/consultancy)\? Заходи и почитай\, как его прокачать\!||`,
+}
+
 var jackPotPapikyan = "https://i.ibb.co/3yPD09VM/image.png"
 var jackPotITMO = "https://i.ibb.co/QWq12Yq/image.png"
 
@@ -92,11 +102,11 @@ type BotService struct {
 	mayatinRouletteUsers    map[int]struct{}
 	mayatinCategoriesVotes  map[string]int
 
-	limitByBack  int
-	papikyanLock map[int]struct{}
+	limitByBack    int
+	papikyanLock   map[int]struct{}
 	lastClick      sync.Map
 	blackjackGames *sync.Map
-	buyBackLock map[int]struct{}
+	buyBackLock    map[int]struct{}
 }
 
 func (bs *BotService) SetLimitByBack(newLimit int) {
@@ -106,7 +116,7 @@ func (bs *BotService) SetLimitByBack(newLimit int) {
 	bs.Logger.Printf("New limit : %d", bs.limitByBack)
 }
 func NewBotService(logger embedlog.Logger, dbo db.DB) *BotService {
-	return &BotService{Logger: logger, db: dbo, cr: db.NewCommonRepo(dbo), mayatinRouletteBets: new(sync.Map), papikyanLock: make(map[int]struct{}), buyBackLock: make(map[int]struct{}), limitByBack: 10,blackjackGames: new(sync.Map)}
+	return &BotService{Logger: logger, db: dbo, cr: db.NewCommonRepo(dbo), mayatinRouletteBets: new(sync.Map), papikyanLock: make(map[int]struct{}), buyBackLock: make(map[int]struct{}), limitByBack: 10, blackjackGames: new(sync.Map)}
 
 }
 
@@ -522,7 +532,7 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 					ThumbnailMimeType: "image/gif",
 					InputMessageContent: &models.InputTextMessageContent{
 						MessageText: `Рекламная интеграция\!
-||Лучший мини апп [полка](https://t.me/polkabot_news) зарелизился и ждет клиентов\. Будьте первыми\!||`,
+` + marketingSlots[rand.Intn(len(marketingSlots))],
 						ParseMode: models.ParseModeMarkdown,
 					}},
 			},
