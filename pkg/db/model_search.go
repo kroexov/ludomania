@@ -5,6 +5,8 @@
 package db
 
 import (
+	"time"
+
 	"github.com/go-pg/pg/v10"
 	"github.com/go-pg/pg/v10/orm"
 )
@@ -107,5 +109,53 @@ func (ls *LudomanSearch) Q() applier {
 			return query, nil
 		}
 		return ls.Apply(query), nil
+	}
+}
+
+type TransactionSearch struct {
+	search
+
+	ID            *int
+	FromLudomanID *int
+	ToLudomanID   *int
+	Amount        *int
+	CreatedAt     *time.Time
+	IDs           []int
+}
+
+func (ts *TransactionSearch) Apply(query *orm.Query) *orm.Query {
+	if ts == nil {
+		return query
+	}
+	if ts.ID != nil {
+		ts.where(query, Tables.Transaction.Alias, Columns.Transaction.ID, ts.ID)
+	}
+	if ts.FromLudomanID != nil {
+		ts.where(query, Tables.Transaction.Alias, Columns.Transaction.FromLudomanID, ts.FromLudomanID)
+	}
+	if ts.ToLudomanID != nil {
+		ts.where(query, Tables.Transaction.Alias, Columns.Transaction.ToLudomanID, ts.ToLudomanID)
+	}
+	if ts.Amount != nil {
+		ts.where(query, Tables.Transaction.Alias, Columns.Transaction.Amount, ts.Amount)
+	}
+	if ts.CreatedAt != nil {
+		ts.where(query, Tables.Transaction.Alias, Columns.Transaction.CreatedAt, ts.CreatedAt)
+	}
+	if len(ts.IDs) > 0 {
+		Filter{Columns.Transaction.ID, ts.IDs, SearchTypeArray, false}.Apply(query)
+	}
+
+	ts.apply(query)
+
+	return query
+}
+
+func (ts *TransactionSearch) Q() applier {
+	return func(query *orm.Query) (*orm.Query, error) {
+		if ts == nil {
+			return query, nil
+		}
+		return ts.Apply(query), nil
 	}
 }

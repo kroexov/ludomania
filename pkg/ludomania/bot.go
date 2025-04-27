@@ -22,6 +22,7 @@ import (
 )
 
 const (
+	patternConfirm             = "confirm:"
 	patternPapikSlots          = "papikSlots"
 	patternMayatinRoulette     = "mayatinRoulette"
 	patternMayatinRouletteBet  = "mayatinBet"
@@ -93,9 +94,9 @@ type BotService struct {
 
 	limitByBack  int
 	papikyanLock map[int]struct{}
-
 	lastClick      sync.Map
 	blackjackGames *sync.Map
+	buyBackLock map[int]struct{}
 }
 
 func (bs *BotService) SetLimitByBack(newLimit int) {
@@ -105,7 +106,8 @@ func (bs *BotService) SetLimitByBack(newLimit int) {
 	bs.Logger.Printf("New limit : %d", bs.limitByBack)
 }
 func NewBotService(logger embedlog.Logger, dbo db.DB) *BotService {
-	return &BotService{Logger: logger, db: dbo, cr: db.NewCommonRepo(dbo), mayatinRouletteBets: new(sync.Map), papikyanLock: make(map[int]struct{}), limitByBack: 10, blackjackGames: new(sync.Map)}
+	return &BotService{Logger: logger, db: dbo, cr: db.NewCommonRepo(dbo), mayatinRouletteBets: new(sync.Map), papikyanLock: make(map[int]struct{}), buyBackLock: make(map[int]struct{}), limitByBack: 10,blackjackGames: new(sync.Map)}
+
 }
 
 func (bs *BotService) RegisterBotHandlers(b *bot.Bot) {
@@ -115,6 +117,7 @@ func (bs *BotService) RegisterBotHandlers(b *bot.Bot) {
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, playersRating, bot.MatchTypePrefix, bs.PlayersRatingHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternBuyBack, bot.MatchTypePrefix, bs.BuyBackHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternBuyBackHouse, bot.MatchTypePrefix, bs.BuybackHouseHandler)
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternConfirm, bot.MatchTypePrefix, bs.handleCallbackQueryTransaction)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternBlackjack, bot.MatchTypePrefix, bs.BlackjackHandler)
 }
 
@@ -137,8 +140,243 @@ func (bs *BotService) DefaultHandler(ctx context.Context, b *bot.Bot, update *mo
 	}
 	return
 }
+func (bs *BotService) Transaction(ctx context.Context, userFrom db.Ludoman, userTo db.Ludoman, amount int, dbo db.DB) error {
+	if userFrom.Balance < amount {
+		return fmt.Errorf("недостаточно средств: нужно %d, а есть %d", amount, userFrom.Balance)
+	}
+
+	err := dbo.RunInTransaction(ctx, func(tx *pg.Tx) error {
+		query1 := `UPDATE ludomans SET balance = balance -(?0) WHERE "ludomanId" = ?1`
+		if _, err := tx.Exec(query1, amount, userFrom.ID); err != nil {
+			return err
+		}
+		query2 := `UPDATE ludomans SET balance = balance +(?0) WHERE "ludomanId" = ?1`
+		if _, err := tx.Exec(query2, amount, userTo.ID); err != nil {
+			return err
+		}
+
+		txRepo := bs.cr.WithTransaction(tx)
+
+		_, err := txRepo.AddTransaction(ctx, &db.Transaction{
+			FromLudomanID: userFrom.ID,
+			ToLudomanID:   userTo.ID,
+			Amount:        amount,
+		})
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return fmt.Errorf("ошибка транзакции: %w", err)
+	}
+
+	return nil
+}
+
+func (bs *BotService) isUserFromBot(ctx context.Context, nickname string) bool {
+	search := &db.LudomanSearch{LudomanNickname: &nickname}
+	user, err := bs.cr.OneLudoman(ctx, search)
+	return err == nil && user != nil
+}
+func (bs *BotService) transferInlineQuery(ctx context.Context, b *bot.Bot, update *models.Update) bool {
+	if update.InlineQuery == nil {
+		return false
+	}
+
+	userInput := update.InlineQuery.Query
+	parts := strings.SplitN(userInput, " ", 2)
+
+	if len(parts) != 2 {
+		return false
+	}
+
+	firstPart := parts[0]
+	if len(firstPart) > 1 {
+		firstPart = firstPart[1:]
+	}
+
+	secondPart := parts[1]
+	value, err := strconv.Atoi(secondPart)
+	if err != nil {
+		fmt.Printf("Ошибка преобразования строки в число: %v\n", err)
+		return false
+	}
+	fmt.Println("value =", value)
+
+	if value >= 100000 && bs.isUserFromBot(ctx, firstPart) {
+		username := update.InlineQuery.From.Username
+
+		userFrom, err := bs.cr.OneLudoman(ctx, &db.LudomanSearch{LudomanNickname: &username})
+		if err != nil || userFrom == nil {
+			fmt.Println("Юзера-отправителя не существует или ошибка БД")
+			return false
+		}
+
+		fmt.Println("баланс и value =", userFrom.Balance, value)
+		if userFrom.Balance >= value {
+			keyboard := &models.InlineKeyboardMarkup{
+				InlineKeyboard: [][]models.InlineKeyboardButton{{
+					{
+						Text:         fmt.Sprintf("Подтвердить перевод %d для %s", value, firstPart),
+						CallbackData: fmt.Sprintf("confirm:%s:%s:%d", username, firstPart, value),
+					},
+				}},
+			}
+
+			result := &models.InlineQueryResultArticle{
+				ID:    "1",
+				Title: "Подтвердите перевод",
+				InputMessageContent: &models.InputTextMessageContent{
+					MessageText: fmt.Sprintf("Перевести %d пользователю %s?", value, firstPart),
+				},
+				ReplyMarkup: keyboard,
+			}
+
+			b.AnswerInlineQuery(ctx, &bot.AnswerInlineQueryParams{
+				InlineQueryID: update.InlineQuery.ID,
+				Results:       []models.InlineQueryResult{result},
+			})
+
+		}
+	}
+
+	return true
+}
+
+func (bs *BotService) handleCallbackQueryTransaction(ctx context.Context, b *bot.Bot, update *models.Update) {
+	if update.CallbackQuery == nil {
+		return
+	}
+	data := update.CallbackQuery.Data
+
+	parts := strings.SplitN(data, ":", 4)
+	if len(parts) != 4 {
+		b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+			CallbackQueryID: update.CallbackQuery.ID,
+			Text:            "Неверный формат подтверждения.",
+			ShowAlert:       true,
+		})
+		bs.deleteCallbackMessage(ctx, b, update)
+		return
+	}
+	initiatorNick := parts[1]
+	targetNick := parts[2]
+	value, err := strconv.Atoi(parts[3])
+
+	clickerNick := update.CallbackQuery.From.Username
+
+	if clickerNick != initiatorNick {
+		_, _ = b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+			CallbackQueryID: update.CallbackQuery.ID,
+			Text:            "Это не ваш автомат! Только @" + initiatorNick + " может подтвердить перевод.",
+			ShowAlert:       true,
+		})
+		return
+	}
+
+	if err != nil {
+		b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+			CallbackQueryID: update.CallbackQuery.ID,
+			Text:            "Некорректная сумма.",
+			ShowAlert:       true,
+		})
+		bs.deleteCallbackMessage(ctx, b, update)
+		return
+	}
+	fromUsername := update.CallbackQuery.From.Username
+	userFrom, err := bs.cr.OneLudoman(ctx, &db.LudomanSearch{LudomanNickname: &fromUsername})
+	if err != nil || userFrom == nil {
+		b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+			CallbackQueryID: update.CallbackQuery.ID,
+			Text:            "Ошибка поиска отправителя.",
+			ShowAlert:       true,
+		})
+		bs.deleteCallbackMessage(ctx, b, update)
+		return
+	}
+	if userFrom.LudomanNickname != update.CallbackQuery.From.Username {
+		_, err = b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+			CallbackQueryID: update.CallbackQuery.ID,
+			Text:            "Это не ваш автомат! Нажмите на название бота и тоже сможете сыграть :)",
+			ShowAlert:       true,
+		})
+		return
+	}
+
+	userTo, err := bs.cr.OneLudoman(ctx, &db.LudomanSearch{LudomanNickname: &targetNick})
+	if err != nil || userTo == nil {
+		b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+			CallbackQueryID: update.CallbackQuery.ID,
+			Text:            "Получатель не найден.",
+			ShowAlert:       true,
+		})
+		bs.deleteCallbackMessage(ctx, b, update)
+		return
+	}
+	if userFrom.Balance < value {
+		b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+			CallbackQueryID: update.CallbackQuery.ID,
+			Text:            "Недостаточно средств.",
+			ShowAlert:       true,
+		})
+		bs.deleteCallbackMessage(ctx, b, update)
+		return
+	}
+	err = bs.Transaction(ctx, *userFrom, *userTo, value, bs.db)
+	if err != nil {
+		b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+			CallbackQueryID: update.CallbackQuery.ID,
+			Text:            "Ошибка транзакции.",
+			ShowAlert:       true,
+		})
+		bs.deleteCallbackMessage(ctx, b, update)
+		return
+	}
+	b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+		CallbackQueryID: update.CallbackQuery.ID,
+		Text:            "Платеж успешно выполнен.",
+		ShowAlert:       true,
+	})
+
+	if update.CallbackQuery.InlineMessageID != "" {
+		b.EditMessageText(ctx, &bot.EditMessageTextParams{
+			InlineMessageID: update.CallbackQuery.InlineMessageID,
+			Text:            fmt.Sprintf("Пользователь @%s успешно перевел %d I$ coins пользователю @%s", fromUsername, value, targetNick),
+		})
+	}
+}
+
+func (bs *BotService) deleteCallbackMessage(ctx context.Context, b *bot.Bot, update *models.Update) {
+	if update.CallbackQuery.Message.Message != nil {
+		chatID := update.CallbackQuery.Message.Message.Chat.ID
+		messageID := update.CallbackQuery.Message.Message.ID
+
+		if _, err := b.DeleteMessage(ctx, &bot.DeleteMessageParams{
+			ChatID:    chatID,
+			MessageID: messageID,
+		}); err != nil {
+			bs.Errorf("не удалось удалить сообщение: %v", err)
+		}
+		return
+	}
+
+	if update.CallbackQuery.InlineMessageID != "" {
+		if _, err := b.EditMessageReplyMarkup(ctx, &bot.EditMessageReplyMarkupParams{
+			InlineMessageID: update.CallbackQuery.InlineMessageID,
+			ReplyMarkup:     nil,
+		}); err != nil {
+			bs.Errorf("не удалось удалить сообщение InlineMessage : %v", err)
+		}
+	}
+}
 
 func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update *models.Update) error {
+	if bs.transferInlineQuery(ctx, b, update) {
+		return nil
+	}
 	username := update.InlineQuery.From.Username
 	tgID := int(update.InlineQuery.From.ID)
 	user, err := bs.cr.OneLudoman(ctx, &db.LudomanSearch{LudomanNickname: &username})
@@ -483,7 +721,6 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 		}
 	}
 }
-
 func (bs *BotService) lossHandler(ctx context.Context, b *bot.Bot, update *models.Update, userId string) {
 	b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
 		InlineMessageID: update.CallbackQuery.InlineMessageID,
@@ -691,6 +928,18 @@ func (bs *BotService) BuyBackHandler(ctx context.Context, b *bot.Bot, update *mo
 		}
 		return
 	}
+
+	if _, ok := bs.buyBackLock[user.ID]; ok {
+		_, err = b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+			CallbackQueryID: update.CallbackQuery.ID,
+			Text:            "Автомат отдыхает, и вы немного отдохните :)",
+			ShowAlert:       true,
+		})
+		return
+	}
+
+	bs.buyBackLock[user.ID] = struct{}{}
+	defer delete(bs.buyBackLock, user.ID)
 
 	if user.Losses >= bs.limitByBack {
 		bs.respondToCallback(ctx, b, update.CallbackQuery.ID, "Вы превысили лимит по продажам квартир. Чтобы повысить лимит, поставьте звездочку в гитхабе")
