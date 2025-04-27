@@ -110,8 +110,13 @@ func (bs *BotService) handleBlackjackBet(ctx context.Context, b *bot.Bot, update
 	betAmount := bet * 100000
 
 	if user.Balance < 100000 {
-		fmt.Println(parts)
 		bs.lossHandler(ctx, b, update, parts[2])
+	}
+
+	if user.Balance < betAmount {
+		//fmt.Println(parts)
+		//bs.lossHandler(ctx, b, update, parts[2])
+		bs.respondToCallback(ctx, b, update.CallbackQuery.ID, "Недостаточно средств для этой ставки !")
 		return
 	}
 
@@ -162,7 +167,7 @@ func drawCards(deck *[]string, n int) string {
 
 func (bs *BotService) renderGameState(ctx context.Context, b *bot.Bot, inlineMsgID string, userID int, game *BlackjackGame, showDealer bool) {
 
-	playerValue := calculateHandValue(game.PlayerHand)
+	playerValue, _ := calculateHandValue(game.PlayerHand)
 
 	dealerHand := "?"
 	if !showDealer {
@@ -174,12 +179,28 @@ func (bs *BotService) renderGameState(ctx context.Context, b *bot.Bot, inlineMsg
 		dealerHand = formatHand(game.DealerHand)
 	}
 
-	caption := fmt.Sprintf("Ваши карты: %s (%d)\nДилер: %s",
-		formatHand(game.PlayerHand),
-		playerValue,
-		dealerHand,
-	)
-	if calculateHandValue(game.PlayerHand) >= 21 {
+	fmt.Println("game.PlayerHand", game.PlayerHand)
+
+	var caption string
+
+	_, soft := calculateHandValue(game.PlayerHand)
+	if strings.Contains(game.PlayerHand, "A") && soft {
+		caption = fmt.Sprintf("Ваши карты: %s (%d \\ %d )\nДилер: %s",
+			formatHand(game.PlayerHand),
+			playerValue,
+			playerValue-10,
+			dealerHand,
+		)
+	} else {
+		caption = fmt.Sprintf("Ваши карты: %s (%d)\nДилер: %s",
+			formatHand(game.PlayerHand),
+			playerValue,
+			dealerHand,
+		)
+	}
+
+	value, _ := calculateHandValue(game.PlayerHand)
+	if value >= 21 {
 		game.IsCompleted = true
 	}
 	var buttons [][]models.InlineKeyboardButton
@@ -230,8 +251,8 @@ func (bs *BotService) handleBlackjackAction(ctx context.Context, b *bot.Bot, upd
 	}
 	game := gameInterface.(*BlackjackGame)
 
-	fmt.Println("hand size == ", game.PlayerHand)
-	fmt.Println("hand size == ", len(game.PlayerHand))
+	//fmt.Println("hand size == ", game.PlayerHand)
+	//fmt.Println("hand size == ", len(game.PlayerHand))
 
 	switch action {
 	case "hit":
@@ -244,7 +265,9 @@ func (bs *BotService) handleBlackjackAction(ctx context.Context, b *bot.Bot, upd
 		newCard := deck[0]
 		game.PlayerHand += " " + newCard
 		game.Deck = strings.Join(deck[1:], " ")
-		if calculateHandValue(game.PlayerHand) >= 21 {
+
+		value, _ := calculateHandValue(game.PlayerHand)
+		if value >= 21 {
 			game.IsCompleted = true
 		}
 
@@ -278,13 +301,17 @@ func (bs *BotService) finalizeGame(ctx context.Context, b *bot.Bot, inlineMsgID 
 	dealerHand := game.DealerHand
 	deck := strings.Split(game.Deck, " ")
 
-	for calculateHandValue(dealerHand) < 17 && len(deck) > 0 {
+	for {
+		value, _ := calculateHandValue(dealerHand)
+		if value >= 17 || len(deck) == 0 {
+			break
+		}
 		dealerHand += " " + deck[0]
 		deck = deck[1:]
 	}
 
-	playerValue := calculateHandValue(game.PlayerHand)
-	dealerValue := calculateHandValue(dealerHand)
+	playerValue, _ := calculateHandValue(game.PlayerHand)
+	dealerValue, _ := calculateHandValue(dealerHand)
 	multiplier := 1
 	if game.IsDoubled {
 		multiplier = 2
@@ -352,7 +379,8 @@ func (bs *BotService) finalizeGame(ctx context.Context, b *bot.Bot, inlineMsgID 
 	bs.blackjackGames.Delete(userID)
 }
 
-func calculateHandValue(hand string) int {
+func calculateHandValue(hand string) (value int, soft bool) {
+	soft = false
 	value, aces := 0, 0
 	cards := strings.Split(hand, " ")
 
@@ -384,16 +412,22 @@ func calculateHandValue(hand string) int {
 	for value > 21 && aces > 0 {
 		value -= 10
 		aces--
+
 	}
-	return value
+	if aces > 0 {
+		soft = true
+	}
+	return value, soft
 }
 
 func formatHand(hand string) string {
+	//fmt.Println("formatHand == ", hand)
 	cards := strings.Split(hand, " ")
 	var formatted []string
 	for _, card := range cards {
 		card = strings.TrimSpace(card)
 		if card != "" {
+
 			formatted = append(formatted, formatCard(card))
 		}
 	}
