@@ -94,7 +94,8 @@ type BotService struct {
 
 	limitByBack  int
 	papikyanLock map[int]struct{}
-
+	lastClick      sync.Map
+	blackjackGames *sync.Map
 	buyBackLock map[int]struct{}
 }
 
@@ -105,7 +106,8 @@ func (bs *BotService) SetLimitByBack(newLimit int) {
 	bs.Logger.Printf("New limit : %d", bs.limitByBack)
 }
 func NewBotService(logger embedlog.Logger, dbo db.DB) *BotService {
-	return &BotService{Logger: logger, db: dbo, cr: db.NewCommonRepo(dbo), mayatinRouletteBets: new(sync.Map), papikyanLock: make(map[int]struct{}), buyBackLock: make(map[int]struct{}), limitByBack: 10}
+	return &BotService{Logger: logger, db: dbo, cr: db.NewCommonRepo(dbo), mayatinRouletteBets: new(sync.Map), papikyanLock: make(map[int]struct{}), buyBackLock: make(map[int]struct{}), limitByBack: 10,blackjackGames: new(sync.Map)}
+
 }
 
 func (bs *BotService) RegisterBotHandlers(b *bot.Bot) {
@@ -116,9 +118,13 @@ func (bs *BotService) RegisterBotHandlers(b *bot.Bot) {
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternBuyBack, bot.MatchTypePrefix, bs.BuyBackHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternBuyBackHouse, bot.MatchTypePrefix, bs.BuybackHouseHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternConfirm, bot.MatchTypePrefix, bs.handleCallbackQueryTransaction)
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternBlackjack, bot.MatchTypePrefix, bs.BlackjackHandler)
 }
 
 func (bs *BotService) DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	if update.Message != nil && update.Message.Document != nil {
+		println(update.Message.Document.FileName, "|", update.Message.Document.FileID)
+	}
 	if update.Message != nil && update.Message.ViaBot != nil && update.Message.Chat.Type == models.ChatTypeSupergroup && update.Message.ViaBot.ID == 7672429736 && update.Message.MessageThreadID != 8388 {
 		_, err := b.DeleteMessage(ctx, &bot.DeleteMessageParams{ChatID: update.Message.Chat.ID, MessageID: update.Message.ID})
 		if err != nil {
@@ -442,6 +448,12 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 						InlineKeyboard: [][]models.InlineKeyboardButton{
 							{
 								models.InlineKeyboardButton{
+									Text:         "Блекджек с Даней Казанцевым",
+									CallbackData: patternBlackjack + "_" + strconv.Itoa(user.ID),
+								},
+							},
+							{
+								models.InlineKeyboardButton{
 									Text:         "Слоты Папикяна",
 									CallbackData: patternPapikSlots + "_" + strconv.Itoa(user.ID) + "_1",
 								},
@@ -503,8 +515,10 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 					}},
 				&models.InlineQueryResultGif{
 					ID:                "6",
-					GifURL:            "https://img2.vombat.su/images/post/big/2024/09/12/17261016664048.gif?class=max",
-					ThumbnailURL:      "https://img2.vombat.su/images/post/big/2024/09/12/17261016664048.gif?class=max",
+					Title:             "Реклама!",
+					Caption:           "Реклама!",
+					GifURL:            "https://media.tenor.com/QttOudwaS4kAAAAM/ohhp.gif",
+					ThumbnailURL:      "https://media.tenor.com/QttOudwaS4kAAAAM/ohhp.gif",
 					ThumbnailMimeType: "image/gif",
 					InputMessageContent: &models.InputTextMessageContent{
 						MessageText: `Рекламная интеграция\!
@@ -886,6 +900,7 @@ func (bs *BotService) PlayersRatingHandler(ctx context.Context, b *bot.Bot, upda
 }
 
 func (bs *BotService) BuyBackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	fmt.Println("parts === ", update.CallbackQuery.Data)
 	parts := strings.Split(update.CallbackQuery.Data, "_")
 	if len(parts) < 2 {
 		bs.Errorf("len(parts) < 2")
