@@ -94,6 +94,8 @@ type BotService struct {
 
 	limitByBack  int
 	papikyanLock map[int]struct{}
+
+	buyBackLock map[int]struct{}
 }
 
 func (bs *BotService) SetLimitByBack(newLimit int) {
@@ -103,7 +105,7 @@ func (bs *BotService) SetLimitByBack(newLimit int) {
 	bs.Logger.Printf("New limit : %d", bs.limitByBack)
 }
 func NewBotService(logger embedlog.Logger, dbo db.DB) *BotService {
-	return &BotService{Logger: logger, db: dbo, cr: db.NewCommonRepo(dbo), mayatinRouletteBets: new(sync.Map), papikyanLock: make(map[int]struct{}), limitByBack: 10}
+	return &BotService{Logger: logger, db: dbo, cr: db.NewCommonRepo(dbo), mayatinRouletteBets: new(sync.Map), papikyanLock: make(map[int]struct{}), buyBackLock: make(map[int]struct{}), limitByBack: 10}
 }
 
 func (bs *BotService) RegisterBotHandlers(b *bot.Bot) {
@@ -911,6 +913,18 @@ func (bs *BotService) BuyBackHandler(ctx context.Context, b *bot.Bot, update *mo
 		}
 		return
 	}
+
+	if _, ok := bs.buyBackLock[user.ID]; ok {
+		_, err = b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+			CallbackQueryID: update.CallbackQuery.ID,
+			Text:            "Автомат отдыхает, и вы немного отдохните :)",
+			ShowAlert:       true,
+		})
+		return
+	}
+
+	bs.buyBackLock[user.ID] = struct{}{}
+	defer delete(bs.buyBackLock, user.ID)
 
 	if user.Losses >= bs.limitByBack {
 		bs.respondToCallback(ctx, b, update.CallbackQuery.ID, "Вы превысили лимит по продажам квартир. Чтобы повысить лимит, поставьте звездочку в гитхабе")
