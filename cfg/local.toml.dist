@@ -13,3 +13,4 @@ IsDevel   = true
 
 [Bot]
 Token = ""
+TournamentChatID = -1

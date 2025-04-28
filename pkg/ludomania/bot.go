@@ -29,7 +29,6 @@ const (
 	patternPovyshevExams       = "povyshevExams"
 	patternBuyBack             = "buyback"
 	playersRating              = "rating"
-	patternBuyBackHouse        = "BuyBackHouse"
 	initialBalance             = 1000000
 	defaultLimitBuyBack        = 10
 	patternMayatinRouletteBetN = "_n"
@@ -86,6 +85,8 @@ type BotService struct {
 	embedlog.Logger
 	db db.DB
 
+	tournamentChatId int
+
 	cr                      db.CommonRepo
 	mayatinRouletteBets     *sync.Map
 	mu                      sync.Mutex
@@ -100,8 +101,8 @@ type BotService struct {
 	buyBackLock    map[int]struct{}
 }
 
-func NewBotService(logger embedlog.Logger, dbo db.DB) *BotService {
-	return &BotService{Logger: logger, db: dbo, cr: db.NewCommonRepo(dbo), mayatinRouletteBets: new(sync.Map), papikyanLock: make(map[int]struct{}), buyBackLock: make(map[int]struct{}), limitByBack: defaultLimitBuyBack, blackjackGames: new(sync.Map)}
+func NewBotService(logger embedlog.Logger, dbo db.DB, tournamentChatId int) *BotService {
+	return &BotService{Logger: logger, db: dbo, cr: db.NewCommonRepo(dbo), mayatinRouletteBets: new(sync.Map), papikyanLock: make(map[int]struct{}), buyBackLock: make(map[int]struct{}), limitByBack: defaultLimitBuyBack, blackjackGames: new(sync.Map), tournamentChatId: tournamentChatId}
 }
 
 func (bs *BotService) SetLimitByBack(newLimit int) {
@@ -118,6 +119,7 @@ func (bs *BotService) RegisterBotHandlers(b *bot.Bot) {
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, playersRating, bot.MatchTypePrefix, bs.PlayersRatingHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternBuyBack, bot.MatchTypePrefix, bs.BuyBackHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternBuyBackHouse, bot.MatchTypePrefix, bs.BuybackHouseHandler)
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternBuyTicket, bot.MatchTypePrefix, bs.BuyTicketHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternConfirm, bot.MatchTypePrefix, bs.handleCallbackQueryTransaction)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternBlackjack, bot.MatchTypePrefix, bs.BlackjackHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternAddWatch, bot.MatchTypePrefix, bs.AddWatch)
@@ -499,22 +501,7 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 					InputMessageContent: &models.InputTextMessageContent{
 						MessageText: fmt.Sprintf("Добро пожаловать в И$ - Казик, @%s!\nВот список наших развлечений:\n1. Слоты Папикяна. Вход 100.000, шанс на выигрыш 1/7, размер выигрыша 500.000\n2. Рулетка Маятина. Вход 100.000, шансы на выигрыш: 3/10 с возвратом 300.000, либо 1/10 с возвратом 1.000.000\n3. Экзамен Повышева (в разработке). Вход 100.000, шансы на выигрыш 1/6 в размере 500.000, либо взять седьмой \"удачный билет\" с шансом 50/50 и выигрышем 500.000, но ставкой 300.000\n\nВо всех автоматах есть 1/100 шанс на Гигавыигрыш в размере 10.000.000! (в разработке)", username),
 					}},
-				&models.InlineQueryResultArticle{
-					ID:           "5",
-					Title:        "Особые опции 🤭",
-					ThumbnailURL: "https://linda.nyc3.cdn.digitaloceanspaces.com/370_npd_webp-o_18/sticker-fan_11513288_o.webp",
-					ReplyMarkup: models.InlineKeyboardMarkup{
-						InlineKeyboard: [][]models.InlineKeyboardButton{
-							{
-								models.InlineKeyboardButton{
-									Text:         "Выкупить квартиру 2М",
-									CallbackData: patternBuyBackHouse + "_" + strconv.Itoa(user.ID),
-								},
-							},
-						}},
-					InputMessageContent: &models.InputTextMessageContent{
-						MessageText: fmt.Sprintf("🤭🤭🤭🤭🤭🤭🤭"),
-					}},
+				bs.extraOptions(user.ID),
 				&models.InlineQueryResultArticle{
 					ID:           "7",
 					Title:        "Наш гитхаб 🤭",
@@ -746,55 +733,6 @@ func (bs *BotService) lossHandler(ctx context.Context, b *bot.Bot, update *model
 			},
 		}},
 	})
-}
-
-func (bs *BotService) BuybackHouseHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
-	parts := strings.Split(update.CallbackQuery.Data, "_")
-	if len(parts) < 2 {
-		bs.Errorf("invalid callback data: %s", update.CallbackQuery.Data)
-		return
-	}
-
-	userID, err := strconv.Atoi(parts[1])
-	if err != nil {
-		bs.Errorf("invalid user id: %v", err)
-		return
-	}
-
-	user, err := bs.cr.LudomanByID(ctx, userID)
-	if err != nil {
-		bs.Errorf("failed to get user: %v", err)
-		return
-	}
-
-	if user.LudomanNickname != update.CallbackQuery.From.Username {
-		bs.respondToCallback(ctx, b, update.CallbackQuery.ID, "Это не ваше окно выкупа квартиры !")
-		return
-	}
-
-	if user.Balance < 2000000 {
-		bs.respondToCallback(ctx, b, update.CallbackQuery.ID, "Недостаточно i$ coins для выкупа квартиры обратно :(")
-		return
-	}
-
-	if user.Losses <= 0 {
-		bs.respondToCallback(ctx, b, update.CallbackQuery.ID, "Вам нечего выкупать, пора сыграть в i$ казик")
-		return
-	}
-
-	bs.updateBalance(-2000000, []int{user.ID}, true)
-	if err != nil {
-		bs.Errorf("%v", err)
-		return
-	}
-	user.Losses = user.Losses - 1
-	_, err = bs.cr.UpdateLudoman(ctx, user, db.WithColumns(db.Columns.Ludoman.Losses))
-	if err != nil {
-		bs.Errorf("failed to update user: %v", err)
-		return
-	}
-
-	bs.respondToCallback(ctx, b, update.CallbackQuery.ID, fmt.Sprintf("Вы успешно выкупили квартиру обратно!\nКоличество проданных квартир: %d", user.Losses))
 }
 
 func (bs *BotService) respondToCallback(ctx context.Context, b *bot.Bot, callbackID, text string) {

@@ -31,7 +31,8 @@ type Config struct {
 		IsDevel bool
 	}
 	Bot struct {
-		Token string
+		Token            string
+		TournamentChatID int
 	}
 }
 
@@ -61,7 +62,7 @@ func New(appName string, verbose bool, cfg Config, db db.DB, dbc *pg.DB) *App {
 	a.SetStdLoggers(verbose)
 
 	a.gs = githubService.NewGithubService(gitHubOwner, gitHubRepoName)
-	a.bs = botService.NewBotService(a.Logger, a.db)
+	a.bs = botService.NewBotService(a.Logger, a.db, cfg.Bot.TournamentChatID)
 	a.cs = cronService.NewCronService(a.db, a.Logger, a.bs, a.gs)
 
 	opts := []bot.Option{bot.WithDefaultHandler(a.bs.DefaultHandler)}
