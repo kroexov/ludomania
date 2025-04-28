@@ -255,17 +255,41 @@ func (bs *BotService) renderGameState(ctx context.Context, b *bot.Bot, inlineMsg
 		}
 	}
 
+	gifMedia := blackJackFillerGIFs[rand.Intn(len(blackJackFillerGIFs))]
+
 	_, err := b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
 		InlineMessageID: inlineMsgID,
-		Media: &models.InputMediaAnimation{
-			Media:     blackJackFillerGIFs[rand.Intn(len(blackJackFillerGIFs))],
+		Media: &models.InputMediaDocument{
+			Media:     gifMedia,
 			Caption:   "Раскидываем картонки...",
 			ParseMode: models.ParseModeHTML,
-			//HasSpoiler: true,
 		},
 	})
 	if err != nil {
-		bs.Errorf("%v", err)
+		if strings.Contains(err.Error(), "retry_after") {
+			parts := strings.Split(err.Error(), " ")
+			last := parts[len(parts)-1]
+			sec, convErr := strconv.Atoi(last)
+			if convErr != nil {
+				bs.Errorf("failed to parse retry_after: %v", convErr)
+				return
+			}
+			time.Sleep(time.Duration(sec) * time.Second)
+
+			_, retryErr := b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
+				InlineMessageID: inlineMsgID,
+				Media: &models.InputMediaDocument{
+					Media:     gifMedia,
+					Caption:   fmt.Sprintf("Раскидываем картонки... (задержка %ds)", sec),
+					ParseMode: models.ParseModeHTML,
+				},
+			})
+			if retryErr != nil {
+				bs.Errorf("retry render animation error: %v", retryErr)
+			}
+			return
+		}
+		bs.Errorf("render animation error: %v", err)
 	}
 
 	time.Sleep(5 * time.Second)
@@ -280,11 +304,33 @@ func (bs *BotService) renderGameState(ctx context.Context, b *bot.Bot, inlineMsg
 		ReplyMarkup: models.InlineKeyboardMarkup{InlineKeyboard: buttons},
 	})
 	if err != nil {
-		bs.Errorf("%v", err)
+		if strings.Contains(err.Error(), "retry_after") {
+			parts := strings.Split(err.Error(), " ")
+			last := parts[len(parts)-1]
+			sec, convErr := strconv.Atoi(last)
+			if convErr != nil {
+				bs.Errorf("failed to parse retry_after: %v", convErr)
+				return
+			}
+			time.Sleep(time.Duration(sec) * time.Second)
+			errorMsg := fmt.Sprintf("\nИзвините, бот задерживается из-за перегруза запросов. Задержка: %ds", sec)
+			b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
+				InlineMessageID: inlineMsgID,
+				Media: &models.InputMediaPhoto{
+					Media:     "https://ibb.co/SDxYjTgD",
+					Caption:   caption + errorMsg,
+					ParseMode: models.ParseModeHTML,
+				},
+				ReplyMarkup: models.InlineKeyboardMarkup{InlineKeyboard: buttons},
+			})
+			return
+		}
+		bs.Errorf("renderGameState error: %v", err)
 	}
 }
 
 func (bs *BotService) handleBlackjackAction(ctx context.Context, b *bot.Bot, update *models.Update, userID int, parts []string) {
+
 	now := time.Now()
 	if v, ok := bs.lastClick.Load(userID); ok && now.Sub(v.(time.Time)) < 5*time.Second {
 		b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
@@ -301,19 +347,42 @@ func (bs *BotService) handleBlackjackAction(ctx context.Context, b *bot.Bot, upd
 		return
 	}
 	game := gameInterface.(*BlackjackGame)
+
+	time.Sleep(5 * time.Second)
+	gifMedia := blackJackFillerGIFs[rand.Intn(len(blackJackFillerGIFs))]
+
 	_, err := b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
 		InlineMessageID: update.CallbackQuery.InlineMessageID,
-		Media: &models.InputMediaAnimation{
-			Media:     blackJackFillerGIFs[rand.Intn(len(blackJackFillerGIFs))],
+		Media: &models.InputMediaDocument{
+			Media:     gifMedia,
 			Caption:   "Раскидываем картонки...",
 			ParseMode: models.ParseModeHTML,
-			//HasSpoiler: true,
 		},
 	})
 	if err != nil {
-		bs.Errorf("%v", err)
+		if strings.Contains(err.Error(), "retry_after") {
+			parts := strings.Split(err.Error(), " ")
+			sec, convErr := strconv.Atoi(parts[len(parts)-1])
+			if convErr != nil {
+				bs.Errorf("failed to parse retry_after: %v", convErr)
+				return
+			}
+			time.Sleep(time.Duration(sec) * time.Second)
+			_, retryErr := b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
+				InlineMessageID: update.CallbackQuery.InlineMessageID,
+				Media: &models.InputMediaDocument{
+					Media:     gifMedia,
+					Caption:   fmt.Sprintf("Раскидываем картонки... (задержка %ds)", sec),
+					ParseMode: models.ParseModeHTML,
+				},
+			})
+			if retryErr != nil {
+				bs.Errorf("retry render animation error: %v", retryErr)
+			}
+			return
+		}
+		bs.Errorf("render animation error: %v", err)
 	}
-	time.Sleep(5 * time.Second)
 	switch action {
 	case "hit":
 		deck := strings.Split(game.Deck, " ")
@@ -416,6 +485,11 @@ func (bs *BotService) finalizeGame(ctx context.Context, b *bot.Bot, inlineMsgID 
 		p.Sprintf("%d", user.Balance),
 	)
 
+	media := &models.InputMediaPhoto{
+		Media:     resultImage,
+		Caption:   caption,
+		ParseMode: models.ParseModeHTML,
+	}
 	markup := models.InlineKeyboardMarkup{
 		InlineKeyboard: [][]models.InlineKeyboardButton{
 			{
@@ -426,16 +500,36 @@ func (bs *BotService) finalizeGame(ctx context.Context, b *bot.Bot, inlineMsgID 
 
 	_, err = b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
 		InlineMessageID: inlineMsgID,
-		Media: &models.InputMediaPhoto{
-			Media:     resultImage,
-			Caption:   caption,
-			ParseMode: models.ParseModeHTML,
-		},
-		ReplyMarkup: markup,
+		Media:           media,
+		ReplyMarkup:     markup,
 	})
 	if err != nil {
-		bs.Errorf("%v", err)
+
+		if strings.Contains(err.Error(), "retry_after") {
+			parts := strings.Split(err.Error(), " ")
+			last := parts[len(parts)-1]
+			sec, convErr := strconv.Atoi(last)
+			if convErr != nil {
+				bs.Errorf("failed to parse retry_after: %v", convErr)
+				return
+			}
+			time.Sleep(time.Duration(sec) * time.Second)
+
+			media.Caption = fmt.Sprintf("%s\n(задержка %ds из-за перегруза запросов)", caption, sec)
+
+			_, retryErr := b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
+				InlineMessageID: inlineMsgID,
+				Media:           media,
+				ReplyMarkup:     markup,
+			})
+			if retryErr != nil {
+				bs.Errorf("retry finalizeGame edit error: %v", retryErr)
+			}
+			return
+		}
+		bs.Errorf("finalizeGame edit error: %v", err)
 	}
+
 	bs.blackjackGames.Delete(userID)
 }
 
