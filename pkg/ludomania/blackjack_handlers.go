@@ -348,7 +348,6 @@ func (bs *BotService) handleBlackjackAction(ctx context.Context, b *bot.Bot, upd
 	}
 	game := gameInterface.(*BlackjackGame)
 
-	time.Sleep(5 * time.Second)
 	gifMedia := blackJackFillerGIFs[rand.Intn(len(blackJackFillerGIFs))]
 
 	_, err := b.EditMessageMedia(ctx, &bot.EditMessageMediaParams{
@@ -383,6 +382,9 @@ func (bs *BotService) handleBlackjackAction(ctx context.Context, b *bot.Bot, upd
 		}
 		bs.Errorf("render animation error: %v", err)
 	}
+
+	time.Sleep(5 * time.Second)
+
 	switch action {
 	case "hit":
 		deck := strings.Split(game.Deck, " ")
