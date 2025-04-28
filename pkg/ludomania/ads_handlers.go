@@ -2,8 +2,10 @@ package ludomania
 
 import (
 	"context"
+	"fmt"
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
+	"math/rand"
 	"strconv"
 	"strings"
 )
@@ -27,6 +29,35 @@ var ads = []string{
 	`||Если ищешь работу\, чекай [ITMO Careers](https://t.me/careercentreitmo)\! Подпишись и смотри топ вакансии по своему профилю\!||`,
 	`||Самые вкусные вакансии \- в [StudUp Jobs](https://t.me/studup_jobs)\! Не упусти свой шанс залутать первый опыт коммерческой разработки\!||`,
 	`||Советую классный сайт \- [Easyoffer](https://easyoffer.ru/)\! Там можно чекнуть записи собесов\, топ вопросы по вакансиям\, и другие штуки для ускорения поиска работы\!||`,
+}
+
+func (bs *BotService) rollAd(userId int) models.InlineQueryResult {
+	text := `Рекламная интеграция\!
+` + ads[rand.Intn(len(ads))]
+	if rand.Intn(11) == 10 {
+		text = fmt.Sprintf(`Рекламная интеграция\!
+||А _ТЫ_ уже поставил звёздочку на наш [репозиторий](https://github.com/kroexov/ludomania/)\? На данный момент там всего %d звёздочек\!||`, bs.limitByBack-defaultLimitBuyBack)
+	}
+	return &models.InlineQueryResultGif{
+		ID:                "6",
+		Title:             "Реклама!",
+		Caption:           "Реклама!",
+		GifURL:            "https://media.tenor.com/QttOudwaS4kAAAAM/ohhp.gif",
+		ThumbnailURL:      "https://media.tenor.com/QttOudwaS4kAAAAM/ohhp.gif",
+		ThumbnailMimeType: "image/gif",
+		ReplyMarkup: models.InlineKeyboardMarkup{
+			InlineKeyboard: [][]models.InlineKeyboardButton{
+				{
+					models.InlineKeyboardButton{
+						Text:         "Получить 500К за просмотр рекламы",
+						CallbackData: patternAddWatch + "_" + strconv.Itoa(userId),
+					},
+				},
+			}},
+		InputMessageContent: &models.InputTextMessageContent{
+			MessageText: text,
+			ParseMode:   models.ParseModeMarkdown,
+		}}
 }
 
 func (bs *BotService) AddWatch(ctx context.Context, b *bot.Bot, update *models.Update) {

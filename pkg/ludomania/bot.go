@@ -31,6 +31,7 @@ const (
 	playersRating              = "rating"
 	patternBuyBackHouse        = "BuyBackHouse"
 	initialBalance             = 1000000
+	defaultLimitBuyBack        = 10
 	patternMayatinRouletteBetN = "_n"
 	patternMayatinRouletteBetP = "_p"
 	patternMayatinRouletteBetB = "_b"
@@ -100,7 +101,7 @@ type BotService struct {
 }
 
 func NewBotService(logger embedlog.Logger, dbo db.DB) *BotService {
-	return &BotService{Logger: logger, db: dbo, cr: db.NewCommonRepo(dbo), mayatinRouletteBets: new(sync.Map), papikyanLock: make(map[int]struct{}), buyBackLock: make(map[int]struct{}), limitByBack: 10, blackjackGames: new(sync.Map)}
+	return &BotService{Logger: logger, db: dbo, cr: db.NewCommonRepo(dbo), mayatinRouletteBets: new(sync.Map), papikyanLock: make(map[int]struct{}), buyBackLock: make(map[int]struct{}), limitByBack: defaultLimitBuyBack, blackjackGames: new(sync.Map)}
 }
 
 func (bs *BotService) SetLimitByBack(newLimit int) {
@@ -514,27 +515,23 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 					InputMessageContent: &models.InputTextMessageContent{
 						MessageText: fmt.Sprintf("🤭🤭🤭🤭🤭🤭🤭"),
 					}},
-				&models.InlineQueryResultGif{
-					ID:                "6",
-					Title:             "Реклама!",
-					Caption:           "Реклама!",
-					GifURL:            "https://media.tenor.com/QttOudwaS4kAAAAM/ohhp.gif",
-					ThumbnailURL:      "https://media.tenor.com/QttOudwaS4kAAAAM/ohhp.gif",
-					ThumbnailMimeType: "image/gif",
+				&models.InlineQueryResultArticle{
+					ID:           "7",
+					Title:        "Наш гитхаб 🤭",
+					ThumbnailURL: "https://i.ibb.co/9kWXmkY9/image-8.jpg",
 					ReplyMarkup: models.InlineKeyboardMarkup{
 						InlineKeyboard: [][]models.InlineKeyboardButton{
 							{
 								models.InlineKeyboardButton{
-									Text:         "Получить 500К за просмотр рекламы",
-									CallbackData: patternAddWatch + "_" + strconv.Itoa(user.ID),
+									Text: "Пойти поставить звёздочку",
+									URL:  "https://github.com/kroexov/ludomania",
 								},
 							},
 						}},
 					InputMessageContent: &models.InputTextMessageContent{
-						MessageText: `Рекламная интеграция\!
-` + ads[rand.Intn(len(ads))],
-						ParseMode: models.ParseModeMarkdown,
+						MessageText: "Наш опенсорс гитхаб - можно форкать, запускать локально и на сервере, и отслеживать, насколько справедливо проставлены кэфы :)\nhttps://github.com/kroexov/ludomania",
 					}},
+				bs.rollAd(user.ID),
 			},
 			IsPersonal: true,
 			CacheTime:  1,
