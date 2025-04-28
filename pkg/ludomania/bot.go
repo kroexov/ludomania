@@ -35,6 +35,8 @@ const (
 	patternMayatinRouletteBetP = "_p"
 	patternMayatinRouletteBetB = "_b"
 	patternMayatinRouletteBetU = "_u"
+
+	patternAddWatch = "add"
 )
 
 var p = message.NewPrinter(language.German)
@@ -57,6 +59,10 @@ var marketingSlots = []string{
 Просто введите название бота в чате и лудоманьте свою зарплату\!
 В качестве бонуса вы получите возможность накрутить себе песню undefined\!||`,
 	`||Эй\, джун\, а ты уже улучшил своё резюме с [resumeup](https://resumeup.ru/consultancy)\? Заходи и почитай\, как его прокачать\!||`,
+	`||Подписывайся на [лучший канал про бэкенд](https://t.me/andrey_threads) от дядюшки Андрея\!||`,
+	`||А вы знали\, что у мейнтейнера бота есть свой [канал в тг](https://t.me/+RPsESmkpZFY3OTIy)\? Подпишись и читай про ИТМО и разработку с точки зрения первокурсника\!||`,
+	`||Если ищешь работу\, чекай [ITMO Careers](https://t.me/careercentreitmo)\! Подпишись и смотри топ вакансии по своему профилю\!||`,
+	`||Самые вкусные вакансии - в [StudUp Jobs](https://t.me/studup_jobs)\! Не упусти свой шанс залутать первый опыт коммерческой разработки\!||`,
 }
 
 var jackPotPapikyan = "https://i.ibb.co/3yPD09VM/image.png"
@@ -129,6 +135,7 @@ func (bs *BotService) RegisterBotHandlers(b *bot.Bot) {
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternBuyBackHouse, bot.MatchTypePrefix, bs.BuybackHouseHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternConfirm, bot.MatchTypePrefix, bs.handleCallbackQueryTransaction)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternBlackjack, bot.MatchTypePrefix, bs.BlackjackHandler)
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternAddWatch, bot.MatchTypePrefix, bs.AddWatch)
 }
 
 func (bs *BotService) DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -530,6 +537,15 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 					GifURL:            "https://media.tenor.com/QttOudwaS4kAAAAM/ohhp.gif",
 					ThumbnailURL:      "https://media.tenor.com/QttOudwaS4kAAAAM/ohhp.gif",
 					ThumbnailMimeType: "image/gif",
+					ReplyMarkup: models.InlineKeyboardMarkup{
+						InlineKeyboard: [][]models.InlineKeyboardButton{
+							{
+								models.InlineKeyboardButton{
+									Text:         "Получить 500К за просмотр рекламы",
+									CallbackData: patternAddWatch + "_" + strconv.Itoa(user.ID),
+								},
+							},
+						}},
 					InputMessageContent: &models.InputTextMessageContent{
 						MessageText: `Рекламная интеграция\!
 ` + marketingSlots[rand.Intn(len(marketingSlots))],
@@ -1228,6 +1244,33 @@ func (bs *BotService) MayatinRouletteBetHandler(ctx context.Context, b *bot.Bot,
 	bs.mu.Unlock()
 
 	bs.mayatinRouletteBets.Store(user.ID, "_"+userBet)
+}
+
+func (bs *BotService) AddWatch(ctx context.Context, b *bot.Bot, update *models.Update) {
+	parts := strings.Split(update.CallbackQuery.Data, "_")
+	if len(parts) < 2 {
+		bs.Errorf("len(parts) < 2")
+		return
+	}
+	userId, err := strconv.Atoi(parts[1])
+	if err != nil {
+		bs.Errorf("%v", err)
+	}
+
+	err = bs.updateBalance(500000, []int{userId}, true)
+	if err != nil {
+		bs.Errorf("%v", err)
+		return
+	}
+
+	_, err = b.EditMessageReplyMarkup(ctx, &bot.EditMessageReplyMarkupParams{
+		InlineMessageID: update.CallbackQuery.InlineMessageID,
+		ReplyMarkup:     nil,
+	})
+	if err != nil {
+		bs.Errorf("%v", err)
+		return
+	}
 }
 
 func Pointer[T any](in T) *T {

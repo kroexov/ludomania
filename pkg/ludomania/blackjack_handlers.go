@@ -287,7 +287,6 @@ func (bs *BotService) renderGameState(ctx context.Context, b *bot.Bot, inlineMsg
 			if retryErr != nil {
 				bs.Errorf("retry render animation error: %v", retryErr)
 			}
-			return
 		}
 		bs.Errorf("render animation error: %v", err)
 	}
@@ -323,7 +322,6 @@ func (bs *BotService) renderGameState(ctx context.Context, b *bot.Bot, inlineMsg
 				},
 				ReplyMarkup: models.InlineKeyboardMarkup{InlineKeyboard: buttons},
 			})
-			return
 		}
 		bs.Errorf("renderGameState error: %v", err)
 	}
@@ -378,7 +376,6 @@ func (bs *BotService) handleBlackjackAction(ctx context.Context, b *bot.Bot, upd
 			if retryErr != nil {
 				bs.Errorf("retry render animation error: %v", retryErr)
 			}
-			return
 		}
 		bs.Errorf("render animation error: %v", err)
 	}
@@ -527,7 +524,6 @@ func (bs *BotService) finalizeGame(ctx context.Context, b *bot.Bot, inlineMsgID 
 			if retryErr != nil {
 				bs.Errorf("retry finalizeGame edit error: %v", retryErr)
 			}
-			return
 		}
 		bs.Errorf("finalizeGame edit error: %v", err)
 	}
