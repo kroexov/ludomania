@@ -62,7 +62,7 @@ func New(appName string, verbose bool, cfg Config, db db.DB, dbc *pg.DB) *App {
 
 	a.gs = githubService.NewGithubService(gitHubOwner, gitHubRepoName)
 	a.bs = botService.NewBotService(a.Logger, a.db)
-	a.cs = cronService.NewCronService(a.bs, a.gs)
+	a.cs = cronService.NewCronService(a.db, a.Logger, a.bs, a.gs)
 
 	opts := []bot.Option{bot.WithDefaultHandler(a.bs.DefaultHandler)}
 	b, err := bot.New(cfg.Bot.Token, opts...)

@@ -10,7 +10,7 @@ import (
 
 var Columns = struct {
 	Ludoman struct {
-		ID, LudomanNickname, TgID, Balance, Losses, TotalLost, TotalWon string
+		ID, LudomanNickname, TgID, Balance, Losses, TotalLost, TotalWon, AdsWatched string
 	}
 	Transaction struct {
 		ID, FromLudomanID, ToLudomanID, Amount, CreatedAt string
@@ -19,7 +19,7 @@ var Columns = struct {
 	}
 }{
 	Ludoman: struct {
-		ID, LudomanNickname, TgID, Balance, Losses, TotalLost, TotalWon string
+		ID, LudomanNickname, TgID, Balance, Losses, TotalLost, TotalWon, AdsWatched string
 	}{
 		ID:              "ludomanId",
 		LudomanNickname: "ludomanNickname",
@@ -28,6 +28,7 @@ var Columns = struct {
 		Losses:          "losses",
 		TotalLost:       "totalLost",
 		TotalWon:        "totalWon",
+		AdsWatched:      "adsWatched",
 	},
 	Transaction: struct {
 		ID, FromLudomanID, ToLudomanID, Amount, CreatedAt string
@@ -77,6 +78,7 @@ type Ludoman struct {
 	Losses          int    `pg:"losses,use_zero"`
 	TotalLost       *int   `pg:"totalLost"`
 	TotalWon        *int   `pg:"totalWon"`
+	AdsWatched      int    `pg:"adsWatched,use_zero"`
 }
 
 type Transaction struct {

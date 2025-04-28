@@ -1,6 +1,6 @@
 ﻿-- =============================================================================
 -- Diagram Name: ludoman2
--- Created on: 26.04.2025 3:52:20
+-- Created on: 4/28/2025 5:30:06 PM
 -- Diagram Version: 
 -- =============================================================================
 
@@ -13,6 +13,7 @@ CREATE TABLE "ludomans" (
 	"losses" int8 NOT NULL DEFAULT 0,
 	"totalLost" int8,
 	"totalWon" int8,
+	"adsWatched" int4 NOT NULL DEFAULT 0,
 	CONSTRAINT "Constraint0" UNIQUE("ludomanNickname"),
 	CONSTRAINT "Constraint1" UNIQUE("tgId"),
 	PRIMARY KEY("ludomanId")

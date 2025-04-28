@@ -35,8 +35,6 @@ const (
 	patternMayatinRouletteBetP = "_p"
 	patternMayatinRouletteBetB = "_b"
 	patternMayatinRouletteBetU = "_u"
-
-	patternAddWatch = "add"
 )
 
 var p = message.NewPrinter(language.German)
@@ -49,21 +47,6 @@ var slotsResults = [7]string{
 	"https://i.ibb.co/m5Ykp15w/photo-2025-03-21-18-45-22.jpg",
 	"https://i.ibb.co/pBYcBbDJ/photo-2025-03-21-18-45-25.jpg",
 	"https://i.ibb.co/rRBVsQJC/photo-2025-03-21-18-45-27.jpg",
-}
-
-var marketingSlots = []string{
-	`||Лучший мини апп [полка](https://t.me/polkabot_news) зарелизился и ждет клиентов\. Будьте первыми\!||`,
-	`||Выберите себе фильм или сериал посмотреть с [PopcornBro](https://t.me/PopcornBroBot)\!
-Алгоритм подстроится под ваши желания и посоветует самые лушие опции\!||`,
-	`||Узнайте свой грейд с @tvoy\_grade\_bot \!
-Просто введите название бота в чате и лудоманьте свою зарплату\!
-В качестве бонуса вы получите возможность накрутить себе песню undefined\!||`,
-	`||Эй\, джун\, а ты уже улучшил своё резюме с [resumeup](https://resumeup.ru/consultancy)\? Заходи и почитай\, как его прокачать\!||`,
-	`||Подписывайся на [лучший канал про бэкенд](https://t.me/andrey_threads) от дядюшки Андрея\!||`,
-	`||А вы знали\, что у мейнтейнера бота есть свой [канал в тг](https://t.me/+RPsESmkpZFY3OTIy)\? Подпишись и читай про ИТМО и разработку с точки зрения первокурсника\!||`,
-	`||Если ищешь работу\, чекай [ITMO Careers](https://t.me/careercentreitmo)\! Подпишись и смотри топ вакансии по своему профилю\!||`,
-	`||Самые вкусные вакансии \- в [StudUp Jobs](https://t.me/studup_jobs)\! Не упусти свой шанс залутать первый опыт коммерческой разработки\!||`,
-	`||Советую классный сайт \- [Easyoffer](https://easyoffer.ru/)\! Там можно чекнуть записи собесов\, топ вопросы по вакансиям\, и другие штуки для ускорения поиска работы\!||`,
 }
 
 var jackPotPapikyan = "https://i.ibb.co/3yPD09VM/image.png"
@@ -116,15 +99,15 @@ type BotService struct {
 	buyBackLock    map[int]struct{}
 }
 
+func NewBotService(logger embedlog.Logger, dbo db.DB) *BotService {
+	return &BotService{Logger: logger, db: dbo, cr: db.NewCommonRepo(dbo), mayatinRouletteBets: new(sync.Map), papikyanLock: make(map[int]struct{}), buyBackLock: make(map[int]struct{}), limitByBack: 10, blackjackGames: new(sync.Map)}
+}
+
 func (bs *BotService) SetLimitByBack(newLimit int) {
 	bs.mu.Lock()
 	defer bs.mu.Unlock()
 	bs.limitByBack = newLimit
 	bs.Logger.Printf("New limit : %d", bs.limitByBack)
-}
-func NewBotService(logger embedlog.Logger, dbo db.DB) *BotService {
-	return &BotService{Logger: logger, db: dbo, cr: db.NewCommonRepo(dbo), mayatinRouletteBets: new(sync.Map), papikyanLock: make(map[int]struct{}), buyBackLock: make(map[int]struct{}), limitByBack: 10, blackjackGames: new(sync.Map)}
-
 }
 
 func (bs *BotService) RegisterBotHandlers(b *bot.Bot) {
@@ -549,7 +532,7 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 						}},
 					InputMessageContent: &models.InputTextMessageContent{
 						MessageText: `Рекламная интеграция\!
-` + marketingSlots[rand.Intn(len(marketingSlots))],
+` + ads[rand.Intn(len(ads))],
 						ParseMode: models.ParseModeMarkdown,
 					}},
 			},
@@ -1245,33 +1228,6 @@ func (bs *BotService) MayatinRouletteBetHandler(ctx context.Context, b *bot.Bot,
 	bs.mu.Unlock()
 
 	bs.mayatinRouletteBets.Store(user.ID, "_"+userBet)
-}
-
-func (bs *BotService) AddWatch(ctx context.Context, b *bot.Bot, update *models.Update) {
-	parts := strings.Split(update.CallbackQuery.Data, "_")
-	if len(parts) < 2 {
-		bs.Errorf("len(parts) < 2")
-		return
-	}
-	userId, err := strconv.Atoi(parts[1])
-	if err != nil {
-		bs.Errorf("%v", err)
-	}
-
-	err = bs.updateBalance(500000, []int{userId}, true)
-	if err != nil {
-		bs.Errorf("%v", err)
-		return
-	}
-
-	_, err = b.EditMessageReplyMarkup(ctx, &bot.EditMessageReplyMarkupParams{
-		InlineMessageID: update.CallbackQuery.InlineMessageID,
-		ReplyMarkup:     nil,
-	})
-	if err != nil {
-		bs.Errorf("%v", err)
-		return
-	}
 }
 
 func Pointer[T any](in T) *T {

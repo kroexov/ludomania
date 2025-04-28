@@ -1,0 +1,2 @@
+
+ALTER TABLE "ludomans" ADD "adsWatched" int4 not null default 0;
