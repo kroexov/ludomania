@@ -634,15 +634,15 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 
 	pic := slotsResults[num]
 
-	if rand.Intn(667) == 666 {
-		err = bs.updateBalance(100000000*koef, []int{user.ID}, false)
-		if err != nil {
-			bs.Errorf("%v", err)
-			return
-		}
-		res = fmt.Sprintf("@%s, ГИГАДЖЕКПОТ! С прошедшим 125-м днём рождения нашего любимого ВУЗа!\nВы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 100000000*koef), p.Sprintf("%d", 100000000*koef+user.Balance))
-		pic = jackPotITMO
-	}
+	//if rand.Intn(667) == 666 {
+	//	err = bs.updateBalance(100000000*koef, []int{user.ID}, false)
+	//	if err != nil {
+	//		bs.Errorf("%v", err)
+	//		return
+	//	}
+	//	res = fmt.Sprintf("@%s, ГИГАДЖЕКПОТ! С прошедшим 125-м днём рождения нашего любимого ВУЗа!\nВы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 100000000*koef), p.Sprintf("%d", 100000000*koef+user.Balance))
+	//	pic = jackPotITMO
+	//}
 
 	if rand.Intn(112) == 111 {
 		err = bs.updateBalance(10000000*koef, []int{user.ID}, false)
