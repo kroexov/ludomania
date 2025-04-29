@@ -37,6 +37,14 @@ const (
 	patternMayatinRouletteBetU = "_u"
 )
 
+var titles = map[int]string{
+	1:   "создатель",
+	8:   "папочка",
+	197: "антихайп",
+	32:  "дилер",
+	147: "богач",
+}
+
 var p = message.NewPrinter(language.German)
 
 var slotsResults = [7]string{
@@ -387,6 +395,7 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 	if err != nil {
 		return err
 	}
+	username = "@" + username
 	if user == nil {
 		newUser, err := bs.cr.AddLudoman(ctx, &db.Ludoman{
 			LudomanNickname: username,
@@ -430,13 +439,17 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 							},
 						}},
 					InputMessageContent: &models.InputTextMessageContent{
-						MessageText: fmt.Sprintf("Добро пожаловать в И$ - Казик, @%s!\nВам начислен 1.000.000 I$Coins за первый визит. Выбирайте игру и побеждайте!", username),
+						MessageText: fmt.Sprintf("Добро пожаловать в И$ - Казик, %s!\nВам начислен 1.000.000 I$Coins за первый визит. Выбирайте игру и побеждайте!", username),
 					}},
 			},
 			IsPersonal: true,
 			CacheTime:  1,
 		})
 	} else {
+
+		if title, ok := titles[user.ID]; ok {
+			username = title + " " + username
+		}
 		_, err = b.AnswerInlineQuery(ctx, &bot.AnswerInlineQueryParams{
 			//Button: &models.InlineQueryResultsButton{
 			//	Text:           "Оставить фидбек",
@@ -476,7 +489,7 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 							},
 						}},
 					InputMessageContent: &models.InputTextMessageContent{
-						MessageText: fmt.Sprintf("Добро пожаловать в И$ - Казик, @%s!\nВаш баланс: %s I$Coins\nВыбирайте игру и побеждайте!", username, p.Sprintf("%d", user.Balance)),
+						MessageText: fmt.Sprintf("Добро пожаловать в И$ - Казик, %s!\nВаш баланс: %s I$Coins\nВыбирайте игру и побеждайте!", username, p.Sprintf("%d", user.Balance)),
 					}},
 				&models.InlineQueryResultArticle{
 					ID:           "3",
@@ -492,14 +505,14 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 							},
 						}},
 					InputMessageContent: &models.InputTextMessageContent{
-						MessageText: fmt.Sprintf("Добро пожаловать в И$ - Казик, @%s!\nНажмите кнопку ниже, чтобы узнать рейтинг игроков!", username),
+						MessageText: fmt.Sprintf("Добро пожаловать в И$ - Казик, %s!\nНажмите кнопку ниже, чтобы узнать рейтинг игроков!", username),
 					}},
 				&models.InlineQueryResultArticle{
 					ID:           "4",
 					Title:        "Правила",
 					ThumbnailURL: "https://casino.ru/wp-content/uploads/articles/poker/poker-1-400x266.jpg",
 					InputMessageContent: &models.InputTextMessageContent{
-						MessageText: fmt.Sprintf("Добро пожаловать в И$ - Казик, @%s!\nВот список наших развлечений:\n1. Слоты Папикяна. Вход 100.000, шанс на выигрыш 1/7, размер выигрыша 500.000\n2. Рулетка Маятина. Вход 100.000, шансы на выигрыш: 3/10 с возвратом 300.000, либо 1/10 с возвратом 1.000.000\n3. Экзамен Повышева (в разработке). Вход 100.000, шансы на выигрыш 1/6 в размере 500.000, либо взять седьмой \"удачный билет\" с шансом 50/50 и выигрышем 500.000, но ставкой 300.000\n\nВо всех автоматах есть 1/100 шанс на Гигавыигрыш в размере 10.000.000! (в разработке)", username),
+						MessageText: fmt.Sprintf("Добро пожаловать в И$ - Казик, %s!\nВот список наших развлечений:\n1. Слоты Папикяна. Вход 100.000, шанс на выигрыш 1/7, размер выигрыша 500.000\n2. Рулетка Маятина. Вход 100.000, шансы на выигрыш: 3/10 с возвратом 300.000, либо 1/10 с возвратом 1.000.000\n3. Экзамен Повышева (в разработке). Вход 100.000, шансы на выигрыш 1/6 в размере 500.000, либо взять седьмой \"удачный билет\" с шансом 50/50 и выигрышем 500.000, но ставкой 300.000\n\nВо всех автоматах есть 1/100 шанс на Гигавыигрыш в размере 10.000.000! (в разработке)", username),
 					}},
 				bs.extraOptions(user.ID),
 				&models.InlineQueryResultArticle{
