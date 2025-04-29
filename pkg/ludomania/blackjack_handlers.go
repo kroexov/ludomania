@@ -31,11 +31,7 @@ var blackJackFillerGIFs = []string{
 	//"CgACAgIAAxkBAAIY_GgOMKXNgTfDyIQhgzASBJ5H_OphAAJVcwACTvV4SDZpqKKXKht_NgQ",
 	//"CgACAgIAAxkBAAIY_WgOMKfSVNAcg1W1hzdILEenrRkfAAJWcwACTvV4SH7wA1kYGzKbNgQ",
 
-	"CgACAgIAAxkBAANgaA6Q1DxgUb-XVQ4nP1KH7hyxhf8AAjB0AAKfW3lIb5yY_rMcRo02BA",
-	"CgACAgIAAxkBAANhaA6Q1poODXOpUYlceMnLprBMnJcAAjF0AAKfW3lIFNWY28gKu9w2BA",
-	"CgACAgIAAxkBAANiaA6Q2H9Jommhg0FsPr264MW81vcAAjJ0AAKfW3lI1VkvDAQ5b_M2BA",
-	"CgACAgIAAxkBAANjaA6Q2zWFjXT3i_QtW99X4FiZ5Q0AAjN0AAKfW3lIxU9rpLybCvg2BA",
-	"CgACAgIAAxkBAANkaA6Q3VhUsPcXhvFvjfKW8sTHz4IAAjR0AAKfW3lIz_4pT9JMm6Q2BA",
+	"CgACAgIAAxkBAAM2aBE6B6d7cQi4gbehDBsVzlvb2HQAAjB0AAKfW3lIS3PpExCmZMw2BA",
 }
 
 type BlackjackGame struct {
@@ -155,8 +151,14 @@ func (bs *BotService) handleBlackjackBet(ctx context.Context, b *bot.Bot, update
 		Deck:       strings.Join(deck, " "),
 	}
 
+	playerValue, _ := calculateHandValue(game.PlayerHand)
+
 	bs.blackjackGames.Store(userID, game)
 	bs.updateBalance(-betAmount, []int{userID}, false)
+	if playerValue == 21 {
+		bs.finalizeGame(ctx, b, update.CallbackQuery.InlineMessageID, userID, game)
+		return
+	}
 	bs.renderGameState(ctx, b, update.CallbackQuery.InlineMessageID, userID, game, false)
 }
 
@@ -235,7 +237,6 @@ func (bs *BotService) renderGameState(ctx context.Context, b *bot.Bot, inlineMsg
 			dealerValuePart,
 		)
 	}
-
 	if playerValue >= 21 {
 		game.IsCompleted = true
 	}
