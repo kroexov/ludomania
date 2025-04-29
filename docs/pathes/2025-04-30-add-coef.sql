@@ -1,0 +1,1 @@
+ALTER TABLE "ludomans" ADD "coefficient" integer NOT NULL DEFAULT 1;
