@@ -452,6 +452,7 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 		if user.TgID == 0 {
 			user.TgID = int(update.CallbackQuery.From.ID)
 		}
+		username = "@" + username
 		if title, ok := titles[user.ID]; ok {
 			username = title + " " + username
 		}
