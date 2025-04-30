@@ -45,6 +45,7 @@ var titles = map[int]string{
 	197: "антихайп",
 	32:  "дилер",
 	147: "богач",
+	300: "спартанец",
 }
 
 var p = message.NewPrinter(language.German)
