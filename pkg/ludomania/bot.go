@@ -61,7 +61,9 @@ var slotsResults = [7]string{
 }
 
 var jackPotPapikyan = "https://i.ibb.co/3yPD09VM/image.png"
-var jackPotITMO = "AgACAgIAAxkBAAIZBGgSYUx_PxGxa0CPqAnhR4BlX8beAALd9DEbsbCQSBb8h3FzKNEXAQADAgADcwADNgQ"
+
+// AgACAgIAAxkBAAIZBGgSYUx_PxGxa0CPqAnhR4BlX8beAALd9DEbsbCQSBb8h3FzKNEXAQADAgADcwADNgQ for local testing
+var jackPotITMO = "AgACAgIAAxkBAAO6aBJhxwkd410GW0YYwCWeGkm-XbEAAt30MRuxsJBIXPWx8ghXMwYBAAMCAANzAAM2BA"
 
 type MayatinRouletteCategory struct {
 	CategoryName string
