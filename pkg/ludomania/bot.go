@@ -61,7 +61,7 @@ var slotsResults = [7]string{
 }
 
 var jackPotPapikyan = "https://i.ibb.co/3yPD09VM/image.png"
-var jackPotITMO = "https://i.ibb.co/QWq12Yq/image.png"
+var jackPotITMO = "AgACAgIAAxkBAAIZBGgSYUx_PxGxa0CPqAnhR4BlX8beAALd9DEbsbCQSBb8h3FzKNEXAQADAgADcwADNgQ"
 
 type MayatinRouletteCategory struct {
 	CategoryName string
@@ -139,6 +139,9 @@ func (bs *BotService) RegisterBotHandlers(b *bot.Bot) {
 func (bs *BotService) DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	if update.Message != nil && update.Message.Document != nil {
 		println(update.Message.Document.FileName, "|", update.Message.Document.FileID)
+	}
+	if update.Message != nil && update.Message.Photo != nil {
+		println(update.Message.Photo[0].FileID)
 	}
 	if update.Message != nil && update.Message.ViaBot != nil && update.Message.Chat.Type == models.ChatTypeSupergroup && update.Message.ViaBot.ID == 7672429736 && update.Message.MessageThreadID != 8388 {
 		_, err := b.DeleteMessage(ctx, &bot.DeleteMessageParams{ChatID: update.Message.Chat.ID, MessageID: update.Message.ID})
@@ -633,15 +636,15 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 
 	pic := slotsResults[num]
 
-	//if rand.Intn(667) == 666 {
-	//	err = bs.updateBalance(100000000*koef, []int{user.ID}, false)
-	//	if err != nil {
-	//		bs.Errorf("%v", err)
-	//		return
-	//	}
-	//	res = fmt.Sprintf("@%s, ГИГАДЖЕКПОТ! С прошедшим 125-м днём рождения нашего любимого ВУЗа!\nВы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 100000000*koef), p.Sprintf("%d", 100000000*koef+user.Balance))
-	//	pic = jackPotITMO
-	//}
+	if rand.Intn(667) == 666 {
+		err = bs.updateBalance(100000000*koef, []int{user.ID}, false)
+		if err != nil {
+			bs.Errorf("%v", err)
+			return
+		}
+		res = fmt.Sprintf("@%s, МАЯТИНДЖЕКПОТ! Отмечаем 46-й день рождения нашего любимого Александра Владимировича Маятина!\nВы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 100000000*koef), p.Sprintf("%d", 100000000*koef+user.Balance))
+		pic = jackPotITMO
+	}
 
 	if rand.Intn(112) == 111 {
 		err = bs.updateBalance(10000000*koef, []int{user.ID}, false)
