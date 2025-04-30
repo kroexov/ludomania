@@ -404,6 +404,10 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 			Balance:         initialBalance,
 			TgID:            tgID,
 		})
+		user.Balance = initialBalance
+		if user.TgID == 0 {
+			user.TgID = int(update.CallbackQuery.From.ID)
+		}
 		if err != nil {
 			return err
 		}
