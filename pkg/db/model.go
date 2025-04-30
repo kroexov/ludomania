@@ -10,7 +10,7 @@ import (
 
 var Columns = struct {
 	Ludoman struct {
-		ID, LudomanNickname, TgID, Balance, Losses, TotalLost, TotalWon, AdsWatched string
+		ID, LudomanNickname, TgID, Balance, Losses, TotalLost, TotalWon, AdsWatched, Coefficient, Data string
 	}
 	Transaction struct {
 		ID, FromLudomanID, ToLudomanID, Amount, CreatedAt string
@@ -19,7 +19,7 @@ var Columns = struct {
 	}
 }{
 	Ludoman: struct {
-		ID, LudomanNickname, TgID, Balance, Losses, TotalLost, TotalWon, AdsWatched string
+		ID, LudomanNickname, TgID, Balance, Losses, TotalLost, TotalWon, AdsWatched, Coefficient, Data string
 	}{
 		ID:              "ludomanId",
 		LudomanNickname: "ludomanNickname",
@@ -29,6 +29,8 @@ var Columns = struct {
 		TotalLost:       "totalLost",
 		TotalWon:        "totalWon",
 		AdsWatched:      "adsWatched",
+		Coefficient:     "coefficient",
+		Data:            "data",
 	},
 	Transaction: struct {
 		ID, FromLudomanID, ToLudomanID, Amount, CreatedAt string
@@ -71,14 +73,16 @@ var Tables = struct {
 type Ludoman struct {
 	tableName struct{} `pg:"ludomans,alias:t,discard_unknown_columns"`
 
-	ID              int    `pg:"ludomanId,pk"`
-	LudomanNickname string `pg:"ludomanNickname,use_zero"`
-	TgID            int    `pg:"tgId,use_zero"`
-	Balance         int    `pg:"balance,use_zero"`
-	Losses          int    `pg:"losses,use_zero"`
-	TotalLost       *int   `pg:"totalLost"`
-	TotalWon        *int   `pg:"totalWon"`
-	AdsWatched      int    `pg:"adsWatched,use_zero"`
+	ID              int         `pg:"ludomanId,pk"`
+	LudomanNickname string      `pg:"ludomanNickname,use_zero"`
+	TgID            int         `pg:"tgId,use_zero"`
+	Balance         int         `pg:"balance,use_zero"`
+	Losses          int         `pg:"losses,use_zero"`
+	TotalLost       *int        `pg:"totalLost"`
+	TotalWon        *int        `pg:"totalWon"`
+	AdsWatched      int         `pg:"adsWatched,use_zero"`
+	Coefficient     int         `pg:"coefficient,use_zero"`
+	Data            LudomanData `pg:"data,use_zero"`
 }
 
 type Transaction struct {

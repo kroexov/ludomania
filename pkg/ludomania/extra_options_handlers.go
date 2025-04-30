@@ -13,6 +13,10 @@ import (
 const (
 	patternBuyBackHouse = "buyBackHouse"
 	patternBuyTicket    = "buyTicket"
+	patternCoef10       = "setCoef10"
+	patternCoef100      = "setCoef100"
+	patternCoef200      = "setCoef200"
+	patternCoef500      = "setCoef500"
 )
 
 func (bs *BotService) extraOptions(userId int) models.InlineQueryResult {
@@ -39,7 +43,63 @@ func (bs *BotService) extraOptions(userId int) models.InlineQueryResult {
 			MessageText: fmt.Sprintf("🤭🤭🤭🤭🤭🤭🤭"),
 		}}
 }
+func (bs *BotService) SetCoefHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	parts := strings.Split(update.CallbackQuery.Data, "_")
+	if len(parts) < 2 {
+		bs.Errorf("invalid callback data: %s", update.CallbackQuery.Data)
+		return
+	}
 
+	userID, err := strconv.Atoi(parts[1])
+	if err != nil {
+		bs.Errorf("invalid user id: %v", err)
+		return
+	}
+
+	user, err := bs.cr.LudomanByID(ctx, userID)
+	if err != nil {
+		bs.Errorf("failed to get user: %v", err)
+		return
+	}
+
+	if user.LudomanNickname != update.CallbackQuery.From.Username {
+		bs.respondToCallback(ctx, b, update.CallbackQuery.ID, "Это не ваше окно !")
+		return
+	}
+	coef, err := strconv.Atoi(parts[1])
+	if err != nil {
+		bs.Errorf("invalid coef: %v", err)
+		return
+	}
+	switch {
+	case coef == 10:
+		if user.Data.K10 {
+			user.Coefficient = 10
+		} else {
+
+		}
+	case coef == 100:
+		if user.Data.K100 {
+			user.Coefficient = 100
+		} else {
+
+		}
+
+	case coef == 200:
+		if user.Data.K200 {
+			user.Coefficient = 200
+		} else {
+
+		}
+
+	case coef == 500:
+		if user.Data.K500 {
+			user.Coefficient = 500
+		} else {
+
+		}
+	}
+}
 func (bs *BotService) BuybackHouseHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	parts := strings.Split(update.CallbackQuery.Data, "_")
 	if len(parts) < 2 {

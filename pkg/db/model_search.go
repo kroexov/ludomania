@@ -63,6 +63,7 @@ type LudomanSearch struct {
 	TotalLost            *int
 	TotalWon             *int
 	AdsWatched           *int
+	Coefficient          *int
 	IDs                  []int
 	LudomanNicknameILike *string
 }
@@ -94,6 +95,9 @@ func (ls *LudomanSearch) Apply(query *orm.Query) *orm.Query {
 	}
 	if ls.AdsWatched != nil {
 		ls.where(query, Tables.Ludoman.Alias, Columns.Ludoman.AdsWatched, ls.AdsWatched)
+	}
+	if ls.Coefficient != nil {
+		ls.where(query, Tables.Ludoman.Alias, Columns.Ludoman.Coefficient, ls.Coefficient)
 	}
 	if len(ls.IDs) > 0 {
 		Filter{Columns.Ludoman.ID, ls.IDs, SearchTypeArray, false}.Apply(query)
