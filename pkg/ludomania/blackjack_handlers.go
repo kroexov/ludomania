@@ -241,7 +241,6 @@ func (bs *BotService) renderGameState(ctx context.Context, b *bot.Bot, inlineMsg
 			dealerValuePart,
 		)
 	}
-	
 	if playerValue >= 21 {
 		game.IsCompleted = true
 	}
