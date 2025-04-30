@@ -405,9 +405,6 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 			TgID:            tgID,
 		})
 		user.Balance = initialBalance
-		if user.TgID == 0 {
-			user.TgID = int(update.CallbackQuery.From.ID)
-		}
 		if err != nil {
 			return err
 		}
@@ -452,7 +449,9 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 			CacheTime:  1,
 		})
 	} else {
-
+		if user.TgID == 0 {
+			user.TgID = int(update.CallbackQuery.From.ID)
+		}
 		if title, ok := titles[user.ID]; ok {
 			username = title + " " + username
 		}
