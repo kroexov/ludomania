@@ -398,7 +398,6 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 	if err != nil {
 		return err
 	}
-	username = "@" + username
 	if user == nil {
 		newUser, err := bs.cr.AddLudoman(ctx, &db.Ludoman{
 			LudomanNickname: username,
@@ -449,7 +448,7 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 			CacheTime:  1,
 		})
 	} else {
-
+		username = "@" + username
 		if title, ok := titles[user.ID]; ok {
 			username = title + " " + username
 		}
