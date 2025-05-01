@@ -18,10 +18,6 @@ const (
 	patternCoef100      = "setCoef_100"
 	patternCoef200      = "setCoef_200"
 	patternCoef500      = "setCoef_500"
-	patrernBuyCoef10    = "buyCoef10"
-	patrernBuyCoef100   = "buyCoef100"
-	patrernBuyCoef200   = "buyCoef200"
-	patrernBuyCoef500   = "buyCoef500"
 	patternOfferCoef    = "offerCoef:"
 )
 
@@ -218,7 +214,7 @@ func (bs *BotService) HandleOfferCoefCallback(ctx context.Context, b *bot.Bot, u
 
 	if action == "yes" {
 		if user.Balance >= coefVal*1000000 {
-			bs.updateBalance(-coefVal*1000000, []int{user.ID}, true)
+			bs.updateBalance(-coefVal*1000000, []int{user.ID}, true, 1)
 			switch {
 			case coefVal == 10:
 				user.Data.K10 = true
@@ -306,7 +302,7 @@ func (bs *BotService) BuybackHouseHandler(ctx context.Context, b *bot.Bot, updat
 		return
 	}
 
-	err = bs.updateBalance(-2000000, []int{user.ID}, true)
+	err = bs.updateBalance(-2000000, []int{user.ID}, true, 1)
 	if err != nil {
 		bs.Errorf("%v", err)
 		return
@@ -350,7 +346,7 @@ func (bs *BotService) BuyTicketHandler(ctx context.Context, b *bot.Bot, update *
 		return
 	}
 
-	err = bs.updateBalance(-100000000, []int{user.ID}, true)
+	err = bs.updateBalance(-100000000, []int{user.ID}, true, 1)
 	if err != nil {
 		bs.Errorf("%v", err)
 		return

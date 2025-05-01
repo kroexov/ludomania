@@ -623,14 +623,14 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 	var res string
 	switch num {
 	case 0:
-		err = bs.updateBalance(400000*koef, []int{user.ID}, false)
+		err = bs.updateBalance(400000*koef, []int{user.ID}, false, user.Coefficient)
 		if err != nil {
 			bs.Errorf("%v", err)
 			return
 		}
 		res = fmt.Sprintf("@%s, Победа! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 500000*koef), p.Sprintf("%d", user.Balance+400000*koef))
 	default:
-		err = bs.updateBalance(-100000*koef, []int{user.ID}, false)
+		err = bs.updateBalance(-100000*koef, []int{user.ID}, false, user.Coefficient)
 		if err != nil {
 			bs.Errorf("%v", err)
 			return
@@ -651,7 +651,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 	//}
 
 	if rand.Intn(112) == 111 {
-		err = bs.updateBalance(10000000*koef, []int{user.ID}, false)
+		err = bs.updateBalance(10000000*koef, []int{user.ID}, false, user.Coefficient)
 		if err != nil {
 			bs.Errorf("%v", err)
 			return
@@ -1096,7 +1096,7 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 		return true
 	})
 
-	err = bs.updateBalance(-500000, intKeys(bs.mayatinRouletteUsers), false)
+	err = bs.updateBalance(-500000, intKeys(bs.mayatinRouletteUsers), false, user.Coefficient)
 	if err != nil {
 		bs.Errorf("%v", err)
 		return
@@ -1116,7 +1116,7 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 		}
 		result += fmt.Sprintf("\nПобедителям начислено: %s", p.Sprintf("%d", cat.WinSum))
 
-		err = bs.updateBalance(cat.WinSum, db.Ludomans(winUsers).IDs(), false)
+		err = bs.updateBalance(cat.WinSum, db.Ludomans(winUsers).IDs(), false, user.Coefficient)
 		if err != nil {
 			bs.Errorf("%v", err)
 			return
@@ -1199,11 +1199,11 @@ func intKeys(in map[int]struct{}) []int {
 	return out
 }
 
-func (bs *BotService) updateBalance(sum int, ids []int, balanceOnly bool) error {
+func (bs *BotService) updateBalance(sum int, ids []int, balanceOnly bool, coefficient int) error {
 	if len(ids) == 0 {
 		return nil
 	}
-
+	sum = sum * coefficient
 	query := `
 	UPDATE ludomans
 	SET balance = balance + ?0,

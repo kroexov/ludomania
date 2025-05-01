@@ -96,7 +96,7 @@ func (bs *BotService) AddWatch(ctx context.Context, b *bot.Bot, update *models.U
 		return
 	}
 
-	if err = bs.updateBalance(500000, []int{userId}, true); err != nil {
+	if err = bs.updateBalance(500000, []int{userId}, true, 1); err != nil {
 		bs.Errorf("%v", err)
 		return
 	}
