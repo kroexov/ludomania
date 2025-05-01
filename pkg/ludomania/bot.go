@@ -39,13 +39,19 @@ const (
 
 var titles = map[int]string{
 	1:   "создатель",
+	2:   "братик",
+	12:  "броуки",
 	149: "создатель",
 	3:   "батя чата",
 	8:   "папочка",
 	197: "антихайп",
 	32:  "дилер",
-	147: "богач",
+	147: "царь-богач",
+	74:  "богач",
+	229: "младщий богач",
+	104: "народный",
 	300: "спартанец",
+	199: "андердог",
 }
 
 var p = message.NewPrinter(language.German)
@@ -645,7 +651,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 
 	pic := slotsResults[num]
 
-	if rand.Intn(667*user.Coefficient) == 666 {
+	if user.Coefficient > 1 && rand.Intn(667*user.Coefficient) == 666 {
 		err = bs.updateBalance(100000000*koef, []int{user.ID}, false, user.Coefficient)
 		if err != nil {
 			bs.Errorf("%v", err)
