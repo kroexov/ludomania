@@ -651,7 +651,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 
 	pic := slotsResults[num]
 
-	if user.Coefficient > 1 && rand.Intn(667*user.Coefficient) == 666 {
+	if user.Coefficient > 10 && rand.Intn(667*user.Coefficient) == 666 {
 		err = bs.updateBalance(100000000*koef, []int{user.ID}, false, user.Coefficient)
 		if err != nil {
 			bs.Errorf("%v", err)
