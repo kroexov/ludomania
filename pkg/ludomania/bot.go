@@ -133,6 +133,13 @@ func (bs *BotService) RegisterBotHandlers(b *bot.Bot) {
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternConfirm, bot.MatchTypePrefix, bs.handleCallbackQueryTransaction)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternBlackjack, bot.MatchTypePrefix, bs.BlackjackHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternAddWatch, bot.MatchTypePrefix, bs.AddWatch)
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternOfferCoef, bot.MatchTypePrefix, bs.HandleOfferCoefCallback)
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternCoef1, bot.MatchTypePrefix, bs.SetCoefHandler)
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternCoef10, bot.MatchTypePrefix, bs.SetCoefHandler)
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternCoef100, bot.MatchTypePrefix, bs.SetCoefHandler)
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternCoef200, bot.MatchTypePrefix, bs.SetCoefHandler)
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternCoef500, bot.MatchTypePrefix, bs.SetCoefHandler)
+
 }
 
 func (bs *BotService) DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
