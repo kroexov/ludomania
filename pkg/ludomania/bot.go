@@ -651,7 +651,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 			bs.Errorf("%v", err)
 			return
 		}
-		res = fmt.Sprintf("@%s, МАЯТИНДЖЕКПОТ! Отмечаем 46-й день рождения нашего любимого Александра Владимировича Маятина!\nВы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 100000000*koef), p.Sprintf("%d", 100000000*koef+user.Balance))
+		res = fmt.Sprintf("@%s, МАЯТИНДЖЕКПОТ! Отмечаем 46-й день рождения нашего любимого Александра Владимировича Маятина!\nВы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 100000000*koef*user.Coefficient), p.Sprintf("%d", (10000000*koef*user.Coefficient)+user.Balance))
 		pic = jackPotITMO
 	}
 
@@ -661,7 +661,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 			bs.Errorf("%v", err)
 			return
 		}
-		res = fmt.Sprintf("@%s, ДЖЕКПОТ! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 10000000*koef), p.Sprintf("%d", 10000000*koef+user.Balance*user.Coefficient))
+		res = fmt.Sprintf("@%s, ДЖЕКПОТ! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 10000000*koef*user.Coefficient), p.Sprintf("%d", (10000000*koef*user.Coefficient)+user.Balance))
 		pic = jackPotPapikyan
 	}
 
