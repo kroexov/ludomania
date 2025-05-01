@@ -1,0 +1,1 @@
+ALTER TABLE "ludomans" ADD "data" jsonb NOT NULL DEFAULT '{}'::jsonb;

@@ -136,6 +136,13 @@ func (bs *BotService) RegisterBotHandlers(b *bot.Bot) {
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternConfirm, bot.MatchTypePrefix, bs.handleCallbackQueryTransaction)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternBlackjack, bot.MatchTypePrefix, bs.BlackjackHandler)
 	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternAddWatch, bot.MatchTypePrefix, bs.AddWatch)
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternOfferCoef, bot.MatchTypePrefix, bs.HandleOfferCoefCallback)
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternCoef1, bot.MatchTypePrefix, bs.SetCoefHandler)
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternCoef10, bot.MatchTypePrefix, bs.SetCoefHandler)
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternCoef100, bot.MatchTypePrefix, bs.SetCoefHandler)
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternCoef200, bot.MatchTypePrefix, bs.SetCoefHandler)
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, patternCoef500, bot.MatchTypePrefix, bs.SetCoefHandler)
+
 }
 
 func (bs *BotService) DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -496,7 +503,7 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 							},
 						}},
 					InputMessageContent: &models.InputTextMessageContent{
-						MessageText: fmt.Sprintf("Добро пожаловать в И$ - Казик, %s!\nВаш баланс: %s I$Coins\nВыбирайте игру и побеждайте!", username, p.Sprintf("%d", user.Balance)),
+						MessageText: fmt.Sprintf("Добро пожаловать в И$ - Казик, %s!\nВаш баланс: %s I$Coins\n Ваш текущий коэффициент %d x\nВыбирайте игру и побеждайте!", username, p.Sprintf("%d", user.Balance), user.Coefficient),
 					}},
 				&models.InlineQueryResultArticle{
 					ID:           "3",
@@ -589,7 +596,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 		return
 	}
 
-	if user.Balance < 100000*koef {
+	if user.Balance < 100000*koef*user.Coefficient {
 		if user.Balance < 100000 {
 			bs.lossHandler(ctx, b, update, parts[1])
 			return
@@ -621,25 +628,25 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 	var res string
 	switch num {
 	case 0:
-		err = bs.updateBalance(400000*koef, []int{user.ID}, false)
+		err = bs.updateBalance(400000*koef, []int{user.ID}, false, user.Coefficient)
 		if err != nil {
 			bs.Errorf("%v", err)
 			return
 		}
-		res = fmt.Sprintf("@%s, Победа! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 500000*koef), p.Sprintf("%d", user.Balance+400000*koef))
+		res = fmt.Sprintf("@%s, Победа! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 500000*koef), p.Sprintf("%d", user.Balance+400000*koef*user.Coefficient))
 	default:
-		err = bs.updateBalance(-100000*koef, []int{user.ID}, false)
+		err = bs.updateBalance(-100000*koef, []int{user.ID}, false, user.Coefficient)
 		if err != nil {
 			bs.Errorf("%v", err)
 			return
 		}
-		res = fmt.Sprintf("@%s, Неудача! Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", user.Balance-100000*koef))
+		res = fmt.Sprintf("@%s, Неудача! Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", user.Balance-100000*koef*user.Coefficient))
 	}
 
 	pic := slotsResults[num]
 
-	if rand.Intn(667) == 666 {
-		err = bs.updateBalance(100000000*koef, []int{user.ID}, false)
+	if rand.Intn(667*user.Coefficient) == 666 {
+		err = bs.updateBalance(100000000*koef, []int{user.ID}, false, user.Coefficient)
 		if err != nil {
 			bs.Errorf("%v", err)
 			return
@@ -648,13 +655,13 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 		pic = jackPotITMO
 	}
 
-	if rand.Intn(112) == 111 {
-		err = bs.updateBalance(10000000*koef, []int{user.ID}, false)
+	if rand.Intn(112*user.Coefficient) == 111 {
+		err = bs.updateBalance(10000000*koef, []int{user.ID}, false, user.Coefficient)
 		if err != nil {
 			bs.Errorf("%v", err)
 			return
 		}
-		res = fmt.Sprintf("@%s, ДЖЕКПОТ! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 10000000*koef), p.Sprintf("%d", 10000000*koef+user.Balance))
+		res = fmt.Sprintf("@%s, ДЖЕКПОТ! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 10000000*koef), p.Sprintf("%d", 10000000*koef+user.Balance*user.Coefficient))
 		pic = jackPotPapikyan
 	}
 
@@ -1094,7 +1101,7 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 		return true
 	})
 
-	err = bs.updateBalance(-500000, intKeys(bs.mayatinRouletteUsers), false)
+	err = bs.updateBalance(-500000, intKeys(bs.mayatinRouletteUsers), false, user.Coefficient)
 	if err != nil {
 		bs.Errorf("%v", err)
 		return
@@ -1114,7 +1121,7 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 		}
 		result += fmt.Sprintf("\nПобедителям начислено: %s", p.Sprintf("%d", cat.WinSum))
 
-		err = bs.updateBalance(cat.WinSum, db.Ludomans(winUsers).IDs(), false)
+		err = bs.updateBalance(cat.WinSum, db.Ludomans(winUsers).IDs(), false, user.Coefficient)
 		if err != nil {
 			bs.Errorf("%v", err)
 			return
@@ -1164,7 +1171,7 @@ func (bs *BotService) MayatinRouletteBetHandler(ctx context.Context, b *bot.Bot,
 		return
 	}
 
-	if user.Balance < 500000 {
+	if user.Balance < 500000*user.Coefficient {
 		_, err = b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
 			CallbackQueryID: update.CallbackQuery.ID,
 			Text:            "У вас недостаточно денег для этой ставки :/",
@@ -1197,11 +1204,11 @@ func intKeys(in map[int]struct{}) []int {
 	return out
 }
 
-func (bs *BotService) updateBalance(sum int, ids []int, balanceOnly bool) error {
+func (bs *BotService) updateBalance(sum int, ids []int, balanceOnly bool, coefficient int) error {
 	if len(ids) == 0 {
 		return nil
 	}
-
+	sum = sum * coefficient
 	query := `
 	UPDATE ludomans
 	SET balance = balance + ?0,
