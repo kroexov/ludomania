@@ -155,10 +155,14 @@ func (bs *BotService) handleBlackjackBet(ctx context.Context, b *bot.Bot, update
 		Deck:       strings.Join(deck, " "),
 	}
 
-	//playerValue, _ := calculateHandValue(game.PlayerHand)
+	playerValue, _ := calculateHandValue(game.PlayerHand)
 
 	bs.blackjackGames.Store(userID, game)
 	bs.updateBalance(-betAmount, []int{userID}, false, user.Coefficient)
+	if playerValue == 21 {
+		bs.finalizeGame(ctx, b, update.CallbackQuery.InlineMessageID, userID, game)
+		return
+	}
 	bs.renderGameState(ctx, b, update.CallbackQuery.InlineMessageID, userID, game, false)
 }
 
