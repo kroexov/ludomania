@@ -155,14 +155,10 @@ func (bs *BotService) handleBlackjackBet(ctx context.Context, b *bot.Bot, update
 		Deck:       strings.Join(deck, " "),
 	}
 
-	playerValue, _ := calculateHandValue(game.PlayerHand)
+	//playerValue, _ := calculateHandValue(game.PlayerHand)
 
 	bs.blackjackGames.Store(userID, game)
-	bs.updateBalance(-betAmount, []int{userID}, false)
-	if playerValue == 21 {
-		bs.finalizeGame(ctx, b, update.CallbackQuery.InlineMessageID, userID, game)
-		return
-	}
+	bs.updateBalance(-betAmount, []int{userID}, false, user.Coefficient)
 	bs.renderGameState(ctx, b, update.CallbackQuery.InlineMessageID, userID, game, false)
 }
 
@@ -252,7 +248,7 @@ func (bs *BotService) renderGameState(ctx context.Context, b *bot.Bot, inlineMsg
 				{Text: "Стоп", CallbackData: fmt.Sprintf("bjAct_stand_%d", userID)},
 			},
 		}
-		if user, _ := bs.cr.LudomanByID(ctx, userID); user.Balance >= game.Bet*100000 && len(game.PlayerHand) < 18 {
+		if user, _ := bs.cr.LudomanByID(ctx, userID); user.Balance >= game.Bet*100000*user.Coefficient && len(game.PlayerHand) < 18 {
 			buttons[0] = append(buttons[0], models.InlineKeyboardButton{
 				Text:         "Удвоить",
 				CallbackData: fmt.Sprintf("bjAct_double_%d", userID),
