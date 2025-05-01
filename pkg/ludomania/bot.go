@@ -45,6 +45,7 @@ var titles = map[int]string{
 	197: "антихайп",
 	32:  "дилер",
 	147: "богач",
+	300: "спартанец",
 }
 
 var p = message.NewPrinter(language.German)
@@ -60,7 +61,9 @@ var slotsResults = [7]string{
 }
 
 var jackPotPapikyan = "https://i.ibb.co/3yPD09VM/image.png"
-var jackPotITMO = "https://i.ibb.co/QWq12Yq/image.png"
+
+// AgACAgIAAxkBAAIZBGgSYUx_PxGxa0CPqAnhR4BlX8beAALd9DEbsbCQSBb8h3FzKNEXAQADAgADcwADNgQ for local testing
+var jackPotITMO = "AgACAgIAAxkBAAO6aBJhxwkd410GW0YYwCWeGkm-XbEAAt30MRuxsJBIXPWx8ghXMwYBAAMCAANzAAM2BA"
 
 type MayatinRouletteCategory struct {
 	CategoryName string
@@ -145,6 +148,9 @@ func (bs *BotService) RegisterBotHandlers(b *bot.Bot) {
 func (bs *BotService) DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	if update.Message != nil && update.Message.Document != nil {
 		println(update.Message.Document.FileName, "|", update.Message.Document.FileID)
+	}
+	if update.Message != nil && update.Message.Photo != nil {
+		println(update.Message.Photo[0].FileID)
 	}
 	if update.Message != nil && update.Message.ViaBot != nil && update.Message.Chat.Type == models.ChatTypeSupergroup && update.Message.ViaBot.ID == 7672429736 && update.Message.MessageThreadID != 8388 {
 		_, err := b.DeleteMessage(ctx, &bot.DeleteMessageParams{ChatID: update.Message.Chat.ID, MessageID: update.Message.ID})
@@ -404,7 +410,6 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 	if err != nil {
 		return err
 	}
-	username = "@" + username
 	if user == nil {
 		newUser, err := bs.cr.AddLudoman(ctx, &db.Ludoman{
 			LudomanNickname: username,
@@ -455,7 +460,7 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 			CacheTime:  1,
 		})
 	} else {
-
+		username = "@" + username
 		if title, ok := titles[user.ID]; ok {
 			username = title + " " + username
 		}
@@ -521,7 +526,7 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 					Title:        "Правила",
 					ThumbnailURL: "https://casino.ru/wp-content/uploads/articles/poker/poker-1-400x266.jpg",
 					InputMessageContent: &models.InputTextMessageContent{
-						MessageText: fmt.Sprintf("Добро пожаловать в И$ - Казик, %s!\nВот список наших развлечений:\n1. Слоты Папикяна. Вход 100.000, шанс на выигрыш 1/7, размер выигрыша 500.000\n2. Рулетка Маятина. Вход 100.000, шансы на выигрыш: 3/10 с возвратом 300.000, либо 1/10 с возвратом 1.000.000\n3. Экзамен Повышева (в разработке). Вход 100.000, шансы на выигрыш 1/6 в размере 500.000, либо взять седьмой \"удачный билет\" с шансом 50/50 и выигрышем 500.000, но ставкой 300.000\n\nВо всех автоматах есть 1/100 шанс на Гигавыигрыш в размере 10.000.000! (в разработке)", username),
+						MessageText: fmt.Sprintf("Добро пожаловать в И$ - Казик, %s!\nВот список наших развлечений:\n1. Слоты Папикяна. Шанс на выигрыш 1/7, размер выигрыша 500.000\nЕсть 1/111 шанс на джекпот x100, 1/666 шанс на джекпот x1000 (только по праздникам)\n2. Рулетка Маятина. Шансы на выигрыш: 3/10 с возвратом 300.000, либо 1/10 с возвратом 1.000.000\n3. БлекДжек с Даней Казанцевым. Классические правила БлекДжека.\n4. Перевод Денег. Написать в чате @ludoman_is_bot {@user_name} {сумма} (сумма >= 100.000)\n5. Лимит на продажу квартир. Существует динамический лимит на продажу квартир, он зависит от количества звезд на гитхабе проекта - https://github.com/kroexov/ludomania \n6. Выкуп квартиры. Есть возможность выкупа квартиры обратно за 2.000.000", username),
 					}},
 				bs.extraOptions(user.ID),
 				&models.InlineQueryResultArticle{
@@ -640,15 +645,15 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 
 	pic := slotsResults[num]
 
-	//if rand.Intn(667) == 666 {
-	//	err = bs.updateBalance(100000000*koef, []int{user.ID}, false)
-	//	if err != nil {
-	//		bs.Errorf("%v", err)
-	//		return
-	//	}
-	//	res = fmt.Sprintf("@%s, ГИГАДЖЕКПОТ! С прошедшим 125-м днём рождения нашего любимого ВУЗа!\nВы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 100000000*koef), p.Sprintf("%d", 100000000*koef+user.Balance))
-	//	pic = jackPotITMO
-	//}
+	if rand.Intn(667) == 666 {
+		err = bs.updateBalance(100000000*koef, []int{user.ID}, false)
+		if err != nil {
+			bs.Errorf("%v", err)
+			return
+		}
+		res = fmt.Sprintf("@%s, МАЯТИНДЖЕКПОТ! Отмечаем 46-й день рождения нашего любимого Александра Владимировича Маятина!\nВы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 100000000*koef), p.Sprintf("%d", 100000000*koef+user.Balance))
+		pic = jackPotITMO
+	}
 
 	if rand.Intn(112*user.Coefficient) == 111 {
 		err = bs.updateBalance(10000000*koef, []int{user.ID}, false, user.Coefficient)
