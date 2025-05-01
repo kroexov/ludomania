@@ -650,7 +650,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 	//	pic = jackPotITMO
 	//}
 
-	if rand.Intn(112) == 111 {
+	if rand.Intn(112*user.Coefficient) == 111 {
 		err = bs.updateBalance(10000000*koef, []int{user.ID}, false, user.Coefficient)
 		if err != nil {
 			bs.Errorf("%v", err)
