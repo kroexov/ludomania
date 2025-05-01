@@ -498,7 +498,7 @@ func (bs *BotService) answerInlineQuery(ctx context.Context, b *bot.Bot, update 
 							},
 						}},
 					InputMessageContent: &models.InputTextMessageContent{
-						MessageText: fmt.Sprintf("Добро пожаловать в И$ - Казик, %s!\nВаш баланс: %s I$Coins\nВыбирайте игру и побеждайте!", username, p.Sprintf("%d", user.Balance)),
+						MessageText: fmt.Sprintf("Добро пожаловать в И$ - Казик, %s!\nВаш баланс: %s I$Coins\n Ваш текущий коэффициент %d x\nВыбирайте игру и побеждайте!", username, p.Sprintf("%d", user.Balance), user.Coefficient),
 					}},
 				&models.InlineQueryResultArticle{
 					ID:           "3",
@@ -591,7 +591,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 		return
 	}
 
-	if user.Balance < 100000*koef {
+	if user.Balance < 100000*koef*user.Coefficient {
 		if user.Balance < 100000 {
 			bs.lossHandler(ctx, b, update, parts[1])
 			return
@@ -628,14 +628,14 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 			bs.Errorf("%v", err)
 			return
 		}
-		res = fmt.Sprintf("@%s, Победа! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 500000*koef), p.Sprintf("%d", user.Balance+400000*koef))
+		res = fmt.Sprintf("@%s, Победа! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 500000*koef), p.Sprintf("%d", user.Balance+400000*koef*user.Coefficient))
 	default:
 		err = bs.updateBalance(-100000*koef, []int{user.ID}, false, user.Coefficient)
 		if err != nil {
 			bs.Errorf("%v", err)
 			return
 		}
-		res = fmt.Sprintf("@%s, Неудача! Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", user.Balance-100000*koef))
+		res = fmt.Sprintf("@%s, Неудача! Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", user.Balance-100000*koef*user.Coefficient))
 	}
 
 	pic := slotsResults[num]
@@ -656,7 +656,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 			bs.Errorf("%v", err)
 			return
 		}
-		res = fmt.Sprintf("@%s, ДЖЕКПОТ! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 10000000*koef), p.Sprintf("%d", 10000000*koef+user.Balance))
+		res = fmt.Sprintf("@%s, ДЖЕКПОТ! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 10000000*koef), p.Sprintf("%d", 10000000*koef+user.Balance*user.Coefficient))
 		pic = jackPotPapikyan
 	}
 
@@ -1166,7 +1166,7 @@ func (bs *BotService) MayatinRouletteBetHandler(ctx context.Context, b *bot.Bot,
 		return
 	}
 
-	if user.Balance < 500000 {
+	if user.Balance < 500000*user.Coefficient {
 		_, err = b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
 			CallbackQueryID: update.CallbackQuery.ID,
 			Text:            "У вас недостаточно денег для этой ставки :/",
