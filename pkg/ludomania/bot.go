@@ -639,7 +639,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 			bs.Errorf("%v", err)
 			return
 		}
-		res = fmt.Sprintf("@%s, Победа! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 500000*koef), p.Sprintf("%d", user.Balance+400000*koef*user.Coefficient))
+		res = fmt.Sprintf("@%s, Победа! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 500000*koef*user.Coefficient), p.Sprintf("%d", user.Balance+400000*koef*user.Coefficient))
 	default:
 		err = bs.updateBalance(-100000*koef, []int{user.ID}, false, user.Coefficient)
 		if err != nil {
@@ -657,7 +657,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 			bs.Errorf("%v", err)
 			return
 		}
-		res = fmt.Sprintf("@%s, МАЯТИНДЖЕКПОТ! Отмечаем 46-й день рождения нашего любимого Александра Владимировича Маятина!\nВы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 100000000*koef), p.Sprintf("%d", 100000000*koef+user.Balance))
+		res = fmt.Sprintf("@%s, МАЯТИНДЖЕКПОТ! Отмечаем 46-й день рождения нашего любимого Александра Владимировича Маятина!\nВы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 100000000*koef*user.Coefficient), p.Sprintf("%d", (10000000*koef*user.Coefficient)+user.Balance))
 		pic = jackPotITMO
 	}
 
@@ -667,7 +667,7 @@ func (bs *BotService) PapikRouletteHandler(ctx context.Context, b *bot.Bot, upda
 			bs.Errorf("%v", err)
 			return
 		}
-		res = fmt.Sprintf("@%s, ДЖЕКПОТ! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 10000000*koef), p.Sprintf("%d", 10000000*koef+user.Balance*user.Coefficient))
+		res = fmt.Sprintf("@%s, ДЖЕКПОТ! Вы получаете +%s I$Coins. Ваш текущий баланс: %s I$Coins", update.CallbackQuery.From.Username, p.Sprintf("%d", 10000000*koef*user.Coefficient), p.Sprintf("%d", (10000000*koef*user.Coefficient)+user.Balance))
 		pic = jackPotPapikyan
 	}
 
@@ -1125,7 +1125,7 @@ func (bs *BotService) MayatinRouletteHandler(ctx context.Context, b *bot.Bot, up
 		for _, winUser := range winUsers {
 			result += "@" + winUser.LudomanNickname + " "
 		}
-		result += fmt.Sprintf("\nПобедителям начислено: %s", p.Sprintf("%d", cat.WinSum))
+		result += fmt.Sprintf("\nПобедителям начислено: %s", p.Sprintf("%d", cat.WinSum*user.Coefficient))
 
 		err = bs.updateBalance(cat.WinSum, db.Ludomans(winUsers).IDs(), false, user.Coefficient)
 		if err != nil {
