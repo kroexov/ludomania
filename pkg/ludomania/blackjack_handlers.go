@@ -480,6 +480,11 @@ func (bs *BotService) finalizeGame(ctx context.Context, b *bot.Bot, inlineMsgID 
 		resultImage = defaultImage
 	}
 
+	user, err = bs.cr.LudomanByID(ctx, userID)
+	if err != nil {
+		bs.Errorf("%v", err)
+	}
+
 	caption := fmt.Sprintf("%s\nВаши карты: %s (%d)\nКарты дилера: %s (%d)\nБаланс: %s",
 		result,
 		formatHand(game.PlayerHand),
