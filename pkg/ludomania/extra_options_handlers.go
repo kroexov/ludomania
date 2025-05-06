@@ -34,12 +34,12 @@ func (bs *BotService) extraOptions(userId int) models.InlineQueryResult {
 						CallbackData: patternBuyBackHouse + "_" + strconv.Itoa(userId),
 					},
 				},
-				{
-					models.InlineKeyboardButton{
-						Text:         "Купить билет на ирл турик по покеру (100M)",
-						CallbackData: patternBuyTicket + "_" + strconv.Itoa(userId),
-					},
-				},
+				//{
+				//	models.InlineKeyboardButton{
+				//		Text:         "Купить билет на ирл турик по покеру (100M)",
+				//		CallbackData: patternBuyTicket + "_" + strconv.Itoa(userId),
+				//	},
+				//},
 				{
 					models.InlineKeyboardButton{
 						Text:         "поставить кэф x1 ",
