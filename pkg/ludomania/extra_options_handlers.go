@@ -253,7 +253,7 @@ func (bs *BotService) HandleOfferCoefCallback(ctx context.Context, b *bot.Bot, u
 		bs.respondToCallback(ctx, b, update.CallbackQuery.ID, "Вы отказались от покупки коэффициента.")
 		if _, err := b.EditMessageText(ctx, &bot.EditMessageTextParams{
 			InlineMessageID: update.CallbackQuery.InlineMessageID,
-			Text:            fmt.Sprintf("ЧТО ТУТ НАПИСАТЬ ??"),
+			Text:            fmt.Sprintf("Жаль, что вы отказались от покупки коэффициента"),
 		}); err != nil {
 			bs.Errorf("failed to edit text: %v", err)
 		}
